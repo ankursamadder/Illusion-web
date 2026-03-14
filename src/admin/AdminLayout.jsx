@@ -28,8 +28,8 @@ const AdminLayout = ({ title, subtitle, children }) => {
   return (
     <section className="bg-illusion-blush/10 py-10">
       <Container>
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-          <aside className="rounded-3xl border border-illusion-black/10 bg-white p-4 shadow-card">
+        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <aside className="rounded-3xl border border-illusion-black/10 bg-white p-4 shadow-card lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
             <div className="mb-4 px-3">
               <p className="text-xs uppercase tracking-[0.3em] text-illusion-black/50">
                 Admin

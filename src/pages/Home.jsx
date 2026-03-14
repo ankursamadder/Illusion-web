@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Button from '../components/ui/Button'
@@ -10,6 +10,15 @@ import {
   getMostFavouriteProducts,
   getNewArrivalProducts,
 } from '../services/productService'
+import { getApprovedReviews } from '../services/reviewService'
+
+const chunkItems = (items, size) => {
+  const chunks = []
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size))
+  }
+  return chunks
+}
 
 const ProductSection = ({
   title,
@@ -49,18 +58,121 @@ const ProductSection = ({
   )
 }
 
+const ReviewCard = ({ review }) => {
+  const rating = Math.max(1, Math.min(5, Number(review.rating) || 1))
+  const stars = `${rating}/5`
+
+  return (
+    <Card className="h-full p-5">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-illusion-black">
+            {review.userName ?? 'Customer'}
+          </p>
+          <span className="text-xs text-illusion-black/60">{stars}</span>
+        </div>
+        <p className="text-xs uppercase tracking-[0.2em] text-illusion-black/50">
+          {review.productName ?? 'Store Review'}
+        </p>
+        <p className="text-sm text-illusion-black/70">"{review.comment}"</p>
+      </div>
+    </Card>
+  )
+}
+
+const ReviewsSection = ({ reviews, loading }) => {
+  const reviewSlides = useMemo(() => chunkItems(reviews, 4), [reviews])
+  const [activeSlide, setActiveSlide] = useState(0)
+
+  useEffect(() => {
+    setActiveSlide(0)
+  }, [reviews.length])
+
+  useEffect(() => {
+    if (reviewSlides.length <= 1) return undefined
+
+    const interval = window.setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % reviewSlides.length)
+    }, 3500)
+
+    return () => window.clearInterval(interval)
+  }, [reviewSlides.length])
+
+  const handlePrev = () => {
+    setActiveSlide((prev) =>
+      prev === 0 ? reviewSlides.length - 1 : prev - 1
+    )
+  }
+
+  const handleNext = () => {
+    setActiveSlide((prev) => (prev + 1) % reviewSlides.length)
+  }
+
+  return (
+    <section className="py-12">
+      <Container>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-semibold text-illusion-black">
+              Customer Reviews
+            </h2>
+            <p className="text-sm text-illusion-black/60">
+              Feedback from verified jewellery buyers.
+            </p>
+          </div>
+          {reviewSlides.length > 1 ? (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={handlePrev}>
+                Previous
+              </Button>
+              <Button size="sm" variant="secondary" onClick={handleNext}>
+                Next
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
+        {loading ? (
+          <Card className="text-sm text-illusion-black/60">Loading reviews...</Card>
+        ) : reviews.length ? (
+          <div className="overflow-hidden">
+            <div
+              className="flex transition-transform duration-500 ease-out"
+              style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+            >
+              {reviewSlides.map((slide, index) => (
+                <div key={index} className="grid min-w-full gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {slide.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <Card className="text-sm text-illusion-black/60">
+            No approved reviews yet.
+          </Card>
+        )}
+      </Container>
+    </section>
+  )
+}
+
 const Home = () => {
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(true)
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [reviewsLoading, setReviewsLoading] = useState(true)
   const [featuredProducts, setFeaturedProducts] = useState([])
   const [mostLovedProducts, setMostLovedProducts] = useState([])
   const [newArrivals, setNewArrivals] = useState([])
+  const [approvedReviews, setApprovedReviews] = useState([])
 
   useEffect(() => {
     let mounted = true
 
     const loadProducts = async () => {
-      setLoading(true)
+      setProductsLoading(true)
       try {
         const [featured, loved, arrivals] = await Promise.all([
           getFeaturedProducts(8),
@@ -75,11 +187,25 @@ const Home = () => {
       } catch (error) {
         toast.error(error?.message ?? 'Failed to load homepage products')
       } finally {
-        if (mounted) setLoading(false)
+        if (mounted) setProductsLoading(false)
+      }
+    }
+
+    const loadReviews = async () => {
+      setReviewsLoading(true)
+      try {
+        const reviewItems = await getApprovedReviews(16)
+        if (!mounted) return
+        setApprovedReviews(reviewItems)
+      } catch (error) {
+        toast.error(error?.message ?? 'Failed to load reviews')
+      } finally {
+        if (mounted) setReviewsLoading(false)
       }
     }
 
     loadProducts()
+    loadReviews()
 
     return () => {
       mounted = false
@@ -129,7 +255,7 @@ const Home = () => {
         title="Featured Collection"
         subtitle="Handpicked spotlight pieces from this season."
         products={featuredProducts}
-        loading={loading}
+        loading={productsLoading}
         onViewAll={() => navigate('/shop')}
       />
 
@@ -137,7 +263,7 @@ const Home = () => {
         title="Most Loved Jewellery"
         subtitle="Customer favourites that shine every day."
         products={mostLovedProducts}
-        loading={loading}
+        loading={productsLoading}
         onViewAll={() => navigate('/shop')}
       />
 
@@ -145,9 +271,11 @@ const Home = () => {
         title="New Arrivals"
         subtitle="Latest additions to the Illusion collection."
         products={newArrivals}
-        loading={loading}
+        loading={productsLoading}
         onViewAll={() => navigate('/shop')}
       />
+
+      <ReviewsSection reviews={approvedReviews} loading={reviewsLoading} />
     </div>
   )
 }

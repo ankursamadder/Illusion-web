@@ -1,4 +1,13 @@
-﻿import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore'
 import { db, collections } from '../firebase/firebase'
 
 export const getUserById = async (id) => {
@@ -25,10 +34,34 @@ export const updateUser = async (id, payload) => {
   })
 }
 
+export const getUsers = async () => {
+  const snapshot = await getDocs(collection(db, collections.users))
+  const users = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+
+  return users.sort((a, b) => {
+    const aTime =
+      typeof a.createdAt?.toDate === 'function'
+        ? a.createdAt.toDate().getTime()
+        : new Date(a.createdAt ?? 0).getTime()
+    const bTime =
+      typeof b.createdAt?.toDate === 'function'
+        ? b.createdAt.toDate().getTime()
+        : new Date(b.createdAt ?? 0).getTime()
+
+    return bTime - aTime
+  })
+}
+
+export const deleteUser = async (id) => {
+  await deleteDoc(doc(db, collections.users, id))
+}
+
 const userService = {
   getUserById,
   upsertUser,
   updateUser,
+  getUsers,
+  deleteUser,
 }
 
 export default userService
