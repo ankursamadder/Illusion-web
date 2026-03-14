@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext'
 import useCartStore from '../hooks/useCartStore'
 import { getProducts } from '../services/productService'
 import { formatCurrency } from '../utils/formatCurrency'
+import illusionLogo from '../assets/Illusion logo.png'
 
 const iconButtonBase =
   'relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-illusion-black/10 text-illusion-black/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-illusion-black/20 hover:text-illusion-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illusion-pink/50'
@@ -140,8 +141,16 @@ const Navbar = () => {
       <Container className="py-3">
         <div className="grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center">
           <div className="flex items-center gap-3">
-            <NavLink to="/" className="text-lg font-semibold text-illusion-black">
-              Illusion
+            <NavLink
+              to="/"
+              className="inline-flex items-center"
+              aria-label="Illusion home"
+            >
+              <img
+                src={illusionLogo}
+                alt="Illusion"
+                className="h-9 w-auto object-contain"
+              />
             </NavLink>
 
             <div className="hidden items-center gap-2 rounded-2xl border border-illusion-black/10 bg-white px-3 py-2 shadow-soft sm:flex">
