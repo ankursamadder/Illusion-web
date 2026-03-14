@@ -39,6 +39,16 @@ const AdminProducts = () => {
     }
   }
 
+  const handleFlagToggle = async (product, key) => {
+    try {
+      await updateProduct(product.id, { [key]: !product[key] })
+      toast.success(`${key === 'featured' ? 'Featured' : 'Most Favourite'} updated`)
+      await loadProducts()
+    } catch (error) {
+      toast.error(error?.message ?? 'Failed to update product')
+    }
+  }
+
   const handleDelete = async (product) => {
     const confirm = window.confirm('Delete this product?')
     if (!confirm) return
@@ -79,6 +89,10 @@ const AdminProducts = () => {
                   <Badge variant={product.active === false ? 'outline' : 'soft'}>
                     {product.active === false ? 'Inactive' : 'Active'}
                   </Badge>
+                  {product.featured ? <Badge variant="soft">Featured</Badge> : null}
+                  {product.mostFavourite ? (
+                    <Badge variant="soft">Most Loved</Badge>
+                  ) : null}
                   <span>Stock: {product.stock ?? 0}</span>
                 </div>
               </div>
@@ -105,6 +119,24 @@ const AdminProducts = () => {
                   )}
                   {product.active === false ? 'Activate' : 'Deactivate'}
                 </Button>
+                <label className="inline-flex items-center gap-2 rounded-full border border-illusion-black/10 bg-white px-3 py-1 text-xs text-illusion-black/70">
+                  <input
+                    type="checkbox"
+                    checked={product.featured === true}
+                    onChange={() => handleFlagToggle(product, 'featured')}
+                    className="h-3.5 w-3.5 rounded border-illusion-black/20"
+                  />
+                  Featured product
+                </label>
+                <label className="inline-flex items-center gap-2 rounded-full border border-illusion-black/10 bg-white px-3 py-1 text-xs text-illusion-black/70">
+                  <input
+                    type="checkbox"
+                    checked={product.mostFavourite === true}
+                    onChange={() => handleFlagToggle(product, 'mostFavourite')}
+                    className="h-3.5 w-3.5 rounded border-illusion-black/20"
+                  />
+                  Most Favourite product
+                </label>
                 <Button
                   size="sm"
                   variant="ghost"

@@ -10,7 +10,11 @@ import { formatCurrency } from '../utils/formatCurrency'
 import { useAuth } from '../context/AuthContext'
 import { getUserById, updateUser } from '../services/userService'
 import { createOrder, updateOrder } from '../services/orderService'
-import { createRazorpayOrder, loadRazorpay } from '../services/razorpayService'
+import {
+  createRazorpayOrder,
+  loadRazorpay,
+  verifyRazorpayPayment,
+} from '../services/razorpayService'
 
 const steps = ['Address', 'Payment', 'Summary']
 
@@ -143,7 +147,7 @@ const Checkout = () => {
         throw new Error('Razorpay SDK failed to load')
       }
 
-      const amount = Math.round(total * 100)
+      const amount = Number(total.toFixed(2))
       const razorpayOrder = await createRazorpayOrder({
         amount,
         currency: 'INR',
@@ -155,8 +159,13 @@ const Checkout = () => {
         razorpayOrderId: razorpayOrder.orderId,
       })
 
+      const razorpayKeyId = razorpayOrder.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID
+      if (!razorpayKeyId) {
+        throw new Error('Missing Razorpay key id. Please set VITE_RAZORPAY_KEY_ID')
+      }
+
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID ?? 'rzp_live_SQp4ME25cvdnl6',
+        key: razorpayKeyId,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
         name: 'Illusion',
@@ -171,15 +180,34 @@ const Checkout = () => {
           color: '#fcc8d9',
         },
         handler: async (response) => {
-          await updateOrder(orderId, {
-            status: 'Paid',
-            paymentStatus: 'Success',
-            paymentId: response.razorpay_payment_id,
-            razorpayOrderId: response.razorpay_order_id,
-          })
-          clear()
-          toast.success('Payment successful')
-          navigate('/orders')
+          try {
+            const verification = await verifyRazorpayPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId,
+              userId: user.uid,
+              amount,
+              currency: razorpayOrder.currency,
+            })
+
+            await updateOrder(orderId, {
+              status: verification.status ?? 'Paid',
+              paymentStatus: 'Success',
+              paymentId: response.razorpay_payment_id,
+              razorpayOrderId: response.razorpay_order_id,
+            })
+            clear()
+            toast.success('Payment successful')
+            navigate('/orders')
+          } catch (verifyError) {
+            await updateOrder(orderId, {
+              paymentStatus: 'Failed',
+              paymentError:
+                verifyError?.message ?? 'Payment verification failed',
+            })
+            toast.error(verifyError?.message ?? 'Payment verification failed')
+          }
         },
         modal: {
           ondismiss: async () => {

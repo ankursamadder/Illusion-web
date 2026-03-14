@@ -7,6 +7,7 @@
   orderBy,
   serverTimestamp,
   updateDoc,
+  deleteDoc,
   doc,
 } from 'firebase/firestore'
 import { db, collections } from '../firebase/firebase'
@@ -46,11 +47,16 @@ export const updateOrder = async (id, payload) => {
   })
 }
 
+export const deleteOrder = async (id) => {
+  await deleteDoc(doc(db, collections.orders, id))
+}
+
 const orderService = {
   createOrder,
   getOrders,
   getUserOrders,
   updateOrder,
+  deleteOrder,
 }
 
 export default orderService

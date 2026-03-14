@@ -1,4 +1,4 @@
-﻿import {
+import {
   collection,
   getDocs,
   getDoc,
@@ -8,6 +8,8 @@
   doc,
   query,
   orderBy,
+  where,
+  limit,
   serverTimestamp,
 } from 'firebase/firestore'
 import { getDownloadURL, ref } from 'firebase/storage'
@@ -65,10 +67,50 @@ const normalizeProduct = async (product) => {
   }
 }
 
-export const getProducts = async () => {
-  const snapshot = await getDocs(query(productsRef, orderBy('createdAt', 'desc')))
+const mapAndNormalizeProducts = async (snapshot) => {
   const products = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
   return Promise.all(products.map(normalizeProduct))
+}
+
+export const getProducts = async () => {
+  const snapshot = await getDocs(query(productsRef, orderBy('createdAt', 'desc')))
+  return mapAndNormalizeProducts(snapshot)
+}
+
+export const getFeaturedProducts = async (max = 8) => {
+  const snapshot = await getDocs(
+    query(
+      productsRef,
+      where('featured', '==', true),
+      where('active', '==', true),
+      limit(max)
+    )
+  )
+  return mapAndNormalizeProducts(snapshot)
+}
+
+export const getMostFavouriteProducts = async (max = 8) => {
+  const snapshot = await getDocs(
+    query(
+      productsRef,
+      where('mostFavourite', '==', true),
+      where('active', '==', true),
+      limit(max)
+    )
+  )
+  return mapAndNormalizeProducts(snapshot)
+}
+
+export const getNewArrivalProducts = async (max = 8) => {
+  const snapshot = await getDocs(
+    query(
+      productsRef,
+      where('active', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(max)
+    )
+  )
+  return mapAndNormalizeProducts(snapshot)
 }
 
 export const getProductById = async (id) => {
@@ -80,6 +122,9 @@ export const getProductById = async (id) => {
 export const addProduct = async (payload) => {
   const docRef = await addDoc(productsRef, {
     ...payload,
+    featured: payload.featured ?? false,
+    mostFavourite: payload.mostFavourite ?? false,
+    active: payload.active ?? true,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -100,6 +145,9 @@ export const deleteProduct = async (id) => {
 
 const productService = {
   getProducts,
+  getFeaturedProducts,
+  getMostFavouriteProducts,
+  getNewArrivalProducts,
   getProductById,
   addProduct,
   updateProduct,

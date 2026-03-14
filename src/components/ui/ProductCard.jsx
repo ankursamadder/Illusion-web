@@ -1,5 +1,4 @@
 ﻿import { useLocation, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { Heart, ShoppingBag } from 'lucide-react'
 import Card from './Card'
 import Badge from './Badge'
@@ -9,7 +8,6 @@ import { formatCurrency } from '../../utils/formatCurrency'
 import useCartStore from '../../hooks/useCartStore'
 import useWishlistStore from '../../hooks/useWishlistStore'
 import { useAuth } from '../../context/AuthContext'
-import { createOrder } from '../../services/orderService'
 
 const getImageUrl = (image) => {
   if (!image) return null
@@ -22,7 +20,7 @@ const ProductCard = ({ product }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const { addItem, clear } = useCartStore()
+  const { addItem } = useCartStore()
   const { items, addProduct, removeProduct } = useWishlistStore()
   const { name, price, offerPrice, image, images, tag } = product
   const displayImage =
@@ -38,40 +36,25 @@ const ProductCard = ({ product }) => {
     }
   }
 
-  const handleBuyNow = async () => {
+  const handleViewDetails = () => {
+    if (!product?.id) return
+    navigate(`/product/${product.id}`)
+  }
+
+  const handleBuyNow = () => {
     if (!user) {
       navigate('/login', { state: { from: location } })
       return
     }
 
-    const unitPrice = showOffer ? offerPrice : price
-    const orderItem = {
-      id: product.id,
-      name: product.name,
-      price: product.price ?? 0,
-      offerPrice: product.offerPrice ?? null,
-      image: displayImage,
-      quantity: 1,
-    }
-
-    try {
-      await createOrder({
-        userId: user.uid,
-        customerName: user.name ?? '',
-        email: user.email ?? '',
-        status: 'Pending',
-        items: [orderItem],
-        total: unitPrice ?? 0,
-        paymentMethod: 'upi',
-        address: null,
-        shipment: {},
-      })
-      clear()
-      toast.success('Order placed successfully')
-      navigate('/orders')
-    } catch (error) {
-      toast.error(error?.message ?? 'Failed to place order')
-    }
+    addItem(
+      {
+        ...product,
+        image: displayImage,
+      },
+      1
+    )
+    navigate('/checkout')
   }
 
   return (
@@ -88,11 +71,23 @@ const ProductCard = ({ product }) => {
             Image Placeholder
           </div>
         )}
-        {tag ? (
-          <Badge className="absolute left-4 top-4" variant="dark">
-            {tag}
-          </Badge>
-        ) : null}
+        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+          {product.featured ? (
+            <span className="rounded bg-pink-100 px-2 py-1 text-xs text-pink-600">
+              Featured
+            </span>
+          ) : null}
+          {product.mostFavourite ? (
+            <span className="rounded bg-pink-100 px-2 py-1 text-xs text-pink-600">
+              Most Loved
+            </span>
+          ) : null}
+          {tag ? (
+            <Badge variant="dark">
+              {tag}
+            </Badge>
+          ) : null}
+        </div>
         <div className="absolute right-4 top-4">
           <IconButton
             icon={Heart}
@@ -105,7 +100,11 @@ const ProductCard = ({ product }) => {
       </div>
       <div className="flex flex-1 flex-col gap-3">
         <div>
-          <h3 className="text-lg font-semibold text-illusion-black">{name}</h3>
+          <button type="button" onClick={handleViewDetails} className="text-left">
+            <h3 className="text-lg font-semibold text-illusion-black hover:underline">
+              {name}
+            </h3>
+          </button>
           <div className="mt-1 flex items-center gap-2 text-sm">
             <span className="font-medium text-illusion-black">
               {formatCurrency(showOffer ? offerPrice : price)}
@@ -116,6 +115,13 @@ const ProductCard = ({ product }) => {
               </span>
             ) : null}
           </div>
+          <button
+            type="button"
+            onClick={handleViewDetails}
+            className="mt-1 text-xs text-illusion-black/60 hover:text-illusion-black hover:underline"
+          >
+            View details
+          </button>
         </div>
         <div className="mt-auto grid gap-2 sm:grid-cols-2">
           <Button size="sm" onClick={() => addItem(product)}>

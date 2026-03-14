@@ -18,6 +18,11 @@ import AdminDashboard from './admin/AdminDashboard'
 import AdminProducts from './admin/AdminProducts'
 import AdminProductForm from './admin/AdminProductForm'
 import AdminOrders from './admin/AdminOrders'
+import AdminReviews from './admin/AdminReviews'
+import AdminCharges from './admin/AdminCharges'
+import AdminUsers from './admin/AdminUsers'
+import AdminContacts from './admin/AdminContacts'
+import AdminCoupons from './admin/AdminCoupons'
 
 function App() {
   return (
@@ -98,6 +103,46 @@ function App() {
             element={
               <AdminRoute>
                 <AdminOrders />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/reviews"
+            element={
+              <AdminRoute>
+                <AdminReviews />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/charges"
+            element={
+              <AdminRoute>
+                <AdminCharges />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/contacts"
+            element={
+              <AdminRoute>
+                <AdminContacts />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/coupons"
+            element={
+              <AdminRoute>
+                <AdminCoupons />
               </AdminRoute>
             }
           />

@@ -33,6 +33,8 @@ const ProductForm = () => {
   const [stock, setStock] = useState('')
   const [shipmentTime, setShipmentTime] = useState('')
   const [active, setActive] = useState(true)
+  const [featured, setFeatured] = useState(false)
+  const [mostFavourite, setMostFavourite] = useState(false)
   const [images, setImages] = useState([])
   const [existingImages, setExistingImages] = useState([])
 
@@ -55,6 +57,8 @@ const ProductForm = () => {
         setStock(product.stock ?? '')
         setShipmentTime(product.shipmentTime ?? '')
         setActive(product.active !== false)
+        setFeatured(product.featured === true)
+        setMostFavourite(product.mostFavourite === true)
         setExistingImages(product.images ?? [])
       } catch (error) {
         toast.error(error?.message ?? 'Failed to load product')
@@ -96,7 +100,7 @@ const ProductForm = () => {
     if (image.path) {
       try {
         await deleteObject(ref(storage, image.path))
-      } catch (error) {
+      } catch {
         toast.error('Failed to remove image from storage')
       }
     }
@@ -128,6 +132,8 @@ const ProductForm = () => {
         stock: Number(stock),
         shipmentTime,
         active,
+        featured,
+        mostFavourite,
       }
 
       if (editing) {
@@ -219,6 +225,32 @@ const ProductForm = () => {
             <span>Active product</span>
             <Badge variant={active ? 'soft' : 'outline'}>
               {active ? 'Active' : 'Inactive'}
+            </Badge>
+          </label>
+
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={(event) => setFeatured(event.target.checked)}
+              className="h-4 w-4 rounded border-illusion-black/20"
+            />
+            <span>Featured product</span>
+            <Badge variant={featured ? 'soft' : 'outline'}>
+              {featured ? 'Featured' : 'Not featured'}
+            </Badge>
+          </label>
+
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={mostFavourite}
+              onChange={(event) => setMostFavourite(event.target.checked)}
+              className="h-4 w-4 rounded border-illusion-black/20"
+            />
+            <span>Most Favourite product</span>
+            <Badge variant={mostFavourite ? 'soft' : 'outline'}>
+              {mostFavourite ? 'Most loved' : 'Regular'}
             </Badge>
           </label>
         </Card>

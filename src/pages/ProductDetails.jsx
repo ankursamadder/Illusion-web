@@ -12,7 +12,6 @@ import { formatCurrency } from '../utils/formatCurrency'
 import useCartStore from '../hooks/useCartStore'
 import useWishlistStore from '../hooks/useWishlistStore'
 import { useAuth } from '../context/AuthContext'
-import { createOrder } from '../services/orderService'
 
 const getImageUrl = (image) => {
   if (!image) return null
@@ -26,7 +25,7 @@ const ProductDetails = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const { addItem, clear } = useCartStore()
+  const { addItem } = useCartStore()
   const { items: wishlistItems, addProduct, removeProduct } = useWishlistStore()
   const [product, setProduct] = useState(null)
   const [similar, setSimilar] = useState([])
@@ -109,43 +108,20 @@ const ProductDetails = () => {
     }
   }
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (!user) {
       navigate('/login', { state: { from: location } })
       return
     }
 
-    const price =
-      typeof offerPrice === 'number' && offerPrice < product.price
-        ? offerPrice
-        : product.price
-    const orderItem = {
-      id: product.id,
-      name: product.name,
-      price: product.price ?? 0,
-      offerPrice: product.offerPrice ?? null,
-      image: selectedImage || images[0] || product.image,
-      quantity: 1,
-    }
-
-    try {
-      await createOrder({
-        userId: user.uid,
-        customerName: user.name ?? '',
-        email: user.email ?? '',
-        status: 'Pending',
-        items: [orderItem],
-        total: price,
-        paymentMethod: 'upi',
-        address: null,
-        shipment: {},
-      })
-      clear()
-      toast.success('Order placed successfully')
-      navigate('/orders')
-    } catch (error) {
-      toast.error(error?.message ?? 'Failed to place order')
-    }
+    addItem(
+      {
+        ...product,
+        image: selectedImage || images[0] || product.image,
+      },
+      1
+    )
+    navigate('/checkout')
   }
 
   const handleShare = async () => {
@@ -160,7 +136,7 @@ const ProductDetails = () => {
         await navigator.clipboard.writeText(window.location.href)
         toast.success('Link copied')
       }
-    } catch (error) {
+    } catch {
       toast.error('Unable to share')
     }
   }
