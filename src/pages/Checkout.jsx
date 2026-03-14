@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import PageShell from './PageShell'
@@ -16,32 +16,39 @@ import {
   verifyRazorpayPayment,
 } from '../services/razorpayService'
 
-const steps = ['Address', 'Payment', 'Summary']
-
 const paymentOptions = [
-  { value: 'upi', label: 'UPI' },
-  { value: 'card', label: 'Card' },
-  { value: 'netbanking', label: 'Net Banking' },
-  { value: 'cod', label: 'Cash On Delivery' },
+  {
+    value: 'online',
+    label: 'UPI / Card / Net Banking',
+    helper: 'Secure online payment via Razorpay',
+  },
+  {
+    value: 'cod',
+    label: 'Cash On Delivery',
+    helper: 'Pay when your order is delivered',
+  },
 ]
+
+const emptyAddressForm = {
+  label: '',
+  name: '',
+  line1: '',
+  city: '',
+  state: '',
+  zip: '',
+  phone: '',
+}
 
 const Checkout = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { items, getTotal, clear } = useCartStore()
-  const [step, setStep] = useState(0)
+
   const [selectedAddress, setSelectedAddress] = useState('')
   const [addresses, setAddresses] = useState([])
-  const [newAddress, setNewAddress] = useState({
-    label: '',
-    name: '',
-    line1: '',
-    city: '',
-    state: '',
-    zip: '',
-    phone: '',
-  })
-  const [paymentMethod, setPaymentMethod] = useState('upi')
+  const [showAddressForm, setShowAddressForm] = useState(false)
+  const [newAddress, setNewAddress] = useState(emptyAddressForm)
+  const [paymentMethod, setPaymentMethod] = useState('online')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -52,9 +59,16 @@ const Checkout = () => {
       try {
         const profile = await getUserById(user.uid)
         if (!mounted) return
+
         const stored = profile?.addresses ?? []
         setAddresses(stored)
-        if (stored.length) setSelectedAddress(stored[0].id)
+
+        if (stored.length) {
+          setSelectedAddress(stored[0].id)
+          setShowAddressForm(false)
+        } else {
+          setShowAddressForm(true)
+        }
       } catch (error) {
         toast.error(error?.message ?? 'Failed to load addresses')
       }
@@ -70,44 +84,33 @@ const Checkout = () => {
   const subtotal = getTotal()
   const total = subtotal
 
-  const canContinue = useMemo(() => {
-    if (step === 0) return Boolean(selectedAddress)
-    if (step === 1) return Boolean(paymentMethod)
-    return true
-  }, [paymentMethod, selectedAddress, step])
-
-  const handleNext = () => {
-    if (!canContinue) return
-    setStep((prev) => Math.min(prev + 1, steps.length - 1))
-  }
-
-  const handleBack = () => {
-    setStep((prev) => Math.max(prev - 1, 0))
-  }
+  const canPlaceOrder = useMemo(() => {
+    return Boolean(selectedAddress) && Boolean(paymentMethod) && items.length > 0
+  }, [items.length, paymentMethod, selectedAddress])
 
   const handleAddAddress = async () => {
-    if (!newAddress.name || !newAddress.line1) {
-      toast.error('Add at least name and address')
+    if (!newAddress.name || !newAddress.line1 || !newAddress.phone || !newAddress.zip) {
+      toast.error('Please enter name, address, phone and PIN code')
       return
     }
+
     const id = `addr_${Date.now()}`
-    const next = { id, ...newAddress, label: newAddress.label || 'New' }
-    const updated = [...addresses, next]
+    const nextAddress = {
+      id,
+      ...newAddress,
+      label: newAddress.label || 'Address',
+    }
+    const updated = [...addresses, nextAddress]
+
     setAddresses(updated)
     setSelectedAddress(id)
-    setNewAddress({
-      label: '',
-      name: '',
-      line1: '',
-      city: '',
-      state: '',
-      zip: '',
-      phone: '',
-    })
+    setNewAddress(emptyAddressForm)
+    setShowAddressForm(false)
 
     if (user?.uid) {
       try {
         await updateUser(user.uid, { addresses: updated })
+        toast.success('Address saved')
       } catch (error) {
         toast.error(error?.message ?? 'Failed to save address')
       }
@@ -115,18 +118,17 @@ const Checkout = () => {
   }
 
   const handleConfirm = async () => {
-    if (!items.length || !user) return
+    if (!items.length || !user || !selectedAddress) return
     setSubmitting(true)
 
     const address = addresses.find((item) => item.id === selectedAddress) ?? null
-    const status = paymentMethod === 'cod' ? 'Pending' : 'Pending'
 
     try {
       const orderId = await createOrder({
         userId: user.uid,
         customerName: user.name ?? '',
         email: user.email ?? '',
-        status,
+        status: 'Pending',
         items,
         total,
         paymentMethod,
@@ -203,8 +205,7 @@ const Checkout = () => {
           } catch (verifyError) {
             await updateOrder(orderId, {
               paymentStatus: 'Failed',
-              paymentError:
-                verifyError?.message ?? 'Payment verification failed',
+              paymentError: verifyError?.message ?? 'Payment verification failed',
             })
             toast.error(verifyError?.message ?? 'Payment verification failed')
           }
@@ -235,29 +236,30 @@ const Checkout = () => {
   }
 
   return (
-    <PageShell title="Checkout" subtitle="Complete your order in three steps.">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center gap-3">
-          {steps.map((label, index) => (
-            <div
-              key={label}
-              className={
-                index <= step
-                  ? 'rounded-full border border-illusion-black/10 bg-illusion-blush/60 px-4 py-2 text-sm font-medium text-illusion-black'
-                  : 'rounded-full border border-illusion-black/10 bg-white px-4 py-2 text-sm text-illusion-black/50'
-              }
-            >
-              {index + 1}. {label}
-            </div>
-          ))}
-        </div>
-
-        {step === 0 ? (
-          <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-            <div className="space-y-4">
+    <PageShell title="Checkout" subtitle="Select address and payment to place your order.">
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="space-y-4">
+          <Card className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-illusion-black">Delivery Address</h2>
               {addresses.length ? (
-                addresses.map((address) => (
-                  <Card key={address.id} className="flex items-start gap-4">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setShowAddressForm((prev) => !prev)}
+                >
+                  {showAddressForm ? 'Cancel' : 'Add New Address'}
+                </Button>
+              ) : null}
+            </div>
+
+            {addresses.length ? (
+              <div className="space-y-3">
+                {addresses.map((address) => (
+                  <label
+                    key={address.id}
+                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-illusion-black/10 bg-white p-4"
+                  >
                     <input
                       type="radio"
                       name="address"
@@ -266,56 +268,54 @@ const Checkout = () => {
                       className="mt-1"
                     />
                     <div>
-                      <h3 className="text-base font-semibold text-illusion-black">
-                        {address.label}
-                      </h3>
-                      <p className="text-sm text-illusion-black/60">
-                        {address.name}
+                      <p className="text-sm font-semibold text-illusion-black">
+                        {address.label || 'Address'}
                       </p>
+                      <p className="text-sm text-illusion-black/60">{address.name}</p>
                       <p className="text-sm text-illusion-black/60">
-                        {address.line1}, {address.city}, {address.state}{' '}
-                        {address.zip}
+                        {address.line1}, {address.city}, {address.state} {address.zip}
                       </p>
-                      <p className="text-sm text-illusion-black/60">
-                        {address.phone}
-                      </p>
+                      <p className="text-sm text-illusion-black/60">{address.phone}</p>
                     </div>
-                  </Card>
-                ))
-              ) : (
-                <Card className="text-sm text-illusion-black/60">
-                  No saved addresses yet. Add one to continue.
-                </Card>
-              )}
-            </div>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-illusion-black/20 bg-illusion-blush/20 px-4 py-3 text-sm text-illusion-black/70">
+                No saved address found. Please enter your address to continue.
+              </p>
+            )}
+          </Card>
 
+          {(!addresses.length || showAddressForm) ? (
             <Card className="space-y-4">
-              <h3 className="text-lg font-semibold text-illusion-black">
-                Add new address
+              <h3 className="text-base font-semibold text-illusion-black">
+                {addresses.length ? 'Add New Address' : 'Enter Address'}
               </h3>
-              <Input
-                label="Label"
-                value={newAddress.label}
-                onChange={(event) =>
-                  setNewAddress((prev) => ({ ...prev, label: event.target.value }))
-                }
-                placeholder="Home, Office"
-              />
-              <Input
-                label="Name"
-                value={newAddress.name}
-                onChange={(event) =>
-                  setNewAddress((prev) => ({ ...prev, name: event.target.value }))
-                }
-              />
-              <Input
-                label="Address"
-                value={newAddress.line1}
-                onChange={(event) =>
-                  setNewAddress((prev) => ({ ...prev, line1: event.target.value }))
-                }
-              />
+
               <div className="grid gap-3 md:grid-cols-2">
+                <Input
+                  label="Label"
+                  value={newAddress.label}
+                  onChange={(event) =>
+                    setNewAddress((prev) => ({ ...prev, label: event.target.value }))
+                  }
+                  placeholder="Home, Office"
+                />
+                <Input
+                  label="Name"
+                  value={newAddress.name}
+                  onChange={(event) =>
+                    setNewAddress((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                />
+                <Input
+                  label="Address"
+                  value={newAddress.line1}
+                  onChange={(event) =>
+                    setNewAddress((prev) => ({ ...prev, line1: event.target.value }))
+                  }
+                />
                 <Input
                   label="City"
                   value={newAddress.city}
@@ -345,115 +345,97 @@ const Checkout = () => {
                   }
                 />
               </div>
+
               <Button variant="secondary" onClick={handleAddAddress}>
                 Save Address
               </Button>
             </Card>
-          </div>
-        ) : null}
+          ) : null}
 
-        {step === 1 ? (
+          <Card className="space-y-3">
+            <h3 className="text-base font-semibold text-illusion-black">Order Items</h3>
+            {items.length ? (
+              items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-2xl border border-illusion-black/10 bg-white p-3"
+                >
+                  <div className="h-14 w-14 overflow-hidden rounded-xl bg-illusion-blush/40">
+                    {item.image ? (
+                      <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                    ) : null}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-illusion-black">{item.name}</p>
+                    <p className="text-xs text-illusion-black/55">Qty: {item.quantity}</p>
+                  </div>
+                  <p className="text-sm font-medium text-illusion-black">
+                    {formatCurrency(
+                      (typeof item.offerPrice === 'number' && item.offerPrice < item.price
+                        ? item.offerPrice
+                        : item.price) * item.quantity
+                    )}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-illusion-black/60">Your cart is empty.</p>
+            )}
+          </Card>
+        </div>
+
+        <div className="space-y-4">
           <Card className="space-y-4">
-            <h3 className="text-lg font-semibold text-illusion-black">
-              Payment options
-            </h3>
-            <div className="grid gap-3 md:grid-cols-2">
+            <h2 className="text-lg font-semibold text-illusion-black">Payment Option</h2>
+            <div className="space-y-2">
               {paymentOptions.map((option) => (
                 <label
                   key={option.value}
-                  className="flex items-center gap-3 rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black/70"
+                  className="flex cursor-pointer items-start gap-3 rounded-2xl border border-illusion-black/10 bg-white px-4 py-3"
                 >
                   <input
                     type="radio"
                     name="payment"
                     checked={paymentMethod === option.value}
                     onChange={() => setPaymentMethod(option.value)}
+                    className="mt-1"
                   />
-                  <span className="font-medium text-illusion-black">
-                    {option.label}
-                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-illusion-black">{option.label}</p>
+                    <p className="text-xs text-illusion-black/55">{option.helper}</p>
+                  </div>
                 </label>
               ))}
             </div>
           </Card>
-        ) : null}
 
-        {step === 2 ? (
-          <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-            <div className="space-y-4">
-              {items.length ? (
-                items.map((item) => (
-                  <Card key={item.id} className="flex items-center gap-4">
-                    <div className="h-20 w-20 overflow-hidden rounded-2xl bg-illusion-blush/40">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-base font-semibold text-illusion-black">
-                        {item.name}
-                      </h3>
-                      <p className="text-sm text-illusion-black/60">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
-                    <div className="text-sm font-medium text-illusion-black">
-                      {formatCurrency(
-                        (typeof item.offerPrice === 'number' &&
-                        item.offerPrice < item.price
-                          ? item.offerPrice
-                          : item.price) * item.quantity
-                      )}
-                    </div>
-                  </Card>
-                ))
-              ) : (
-                <Card className="text-sm text-illusion-black/60">
-                  Your cart is empty.
-                </Card>
-              )}
+          <Card className="space-y-4">
+            <h2 className="text-lg font-semibold text-illusion-black">Order Summary</h2>
+            <div className="flex items-center justify-between text-sm text-illusion-black/70">
+              <span>Items</span>
+              <span>{items.length}</span>
             </div>
-            <Card className="space-y-4">
-              <h3 className="text-lg font-semibold text-illusion-black">
-                Order summary
-              </h3>
-              <div className="flex items-center justify-between text-sm text-illusion-black/70">
-                <span>Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm text-illusion-black/70">
-                <span>Shipping</span>
-                <span>Calculated at checkout</span>
-              </div>
-              <div className="flex items-center justify-between text-base font-semibold text-illusion-black">
-                <span>Total</span>
-                <span>{formatCurrency(total)}</span>
-              </div>
-            </Card>
-          </div>
-        ) : null}
+            <div className="flex items-center justify-between text-sm text-illusion-black/70">
+              <span>Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm text-illusion-black/70">
+              <span>Shipping</span>
+              <span>Calculated at checkout</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-illusion-black/10 pt-3 text-base font-semibold text-illusion-black">
+              <span>Total</span>
+              <span>{formatCurrency(total)}</span>
+            </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="secondary"
-            onClick={handleBack}
-            disabled={step === 0}
-          >
-            Back
-          </Button>
-          {step < steps.length - 1 ? (
-            <Button onClick={handleNext} disabled={!canContinue}>
-              Continue
+            {!selectedAddress ? (
+              <p className="text-xs text-red-500">Please select or add an address first.</p>
+            ) : null}
+
+            <Button className="w-full" onClick={handleConfirm} disabled={!canPlaceOrder || submitting}>
+              {submitting ? 'Processing...' : 'Place Order'}
             </Button>
-          ) : (
-            <Button onClick={handleConfirm} disabled={!items.length || submitting}>
-              Confirm order
-            </Button>
-          )}
+          </Card>
         </div>
       </div>
     </PageShell>

@@ -58,13 +58,13 @@ const ProductCard = ({ product }) => {
   }
 
   return (
-    <Card className="group flex h-full flex-col gap-4">
+    <Card className="group flex h-full flex-col gap-3 p-4">
       <div className="relative overflow-hidden rounded-2xl bg-illusion-blush/50">
         {displayImage ? (
           <img
             src={displayImage}
             alt={name}
-            className="h-52 w-full object-cover transition duration-300 group-hover:scale-105"
+            className="h-48 w-full object-cover transition duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-52 items-center justify-center text-sm text-illusion-black/40">
@@ -123,7 +123,7 @@ const ProductCard = ({ product }) => {
             View details
           </button>
         </div>
-        <div className="mt-auto grid gap-2 sm:grid-cols-2">
+        <div className="mt-auto flex flex-col gap-2">
           <Button size="sm" onClick={() => addItem(product)}>
             Add to cart
           </Button>

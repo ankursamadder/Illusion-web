@@ -10,7 +10,7 @@ const StatusBadge = ({ status }) => {
   const colorClass = statusStyles[normalized] || 'bg-gray-100 text-gray-700'
 
   return (
-    <span className={`rounded-full px-3 py-1 text-sm ${colorClass}`}>
+    <span className={`rounded-full px-2 py-0.5 text-xs ${colorClass}`}>
       {status || 'Unknown'}
     </span>
   )

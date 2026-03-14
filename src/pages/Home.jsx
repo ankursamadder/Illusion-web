@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { Star } from 'lucide-react'
 import Button from '../components/ui/Button'
 import ProductCard from '../components/ui/ProductCard'
 import Card from '../components/ui/Card'
@@ -60,7 +61,6 @@ const ProductSection = ({
 
 const ReviewCard = ({ review }) => {
   const rating = Math.max(1, Math.min(5, Number(review.rating) || 1))
-  const stars = `${rating}/5`
 
   return (
     <Card className="h-full p-5">
@@ -69,7 +69,18 @@ const ReviewCard = ({ review }) => {
           <p className="text-sm font-semibold text-illusion-black">
             {review.userName ?? 'Customer'}
           </p>
-          <span className="text-xs text-illusion-black/60">{stars}</span>
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Star
+                key={`${review.id}_star_${index}`}
+                className={`h-3.5 w-3.5 ${
+                  index < rating
+                    ? 'fill-amber-400 text-amber-400'
+                    : 'text-illusion-black/20'
+                }`}
+              />
+            ))}
+          </div>
         </div>
         <p className="text-xs uppercase tracking-[0.2em] text-illusion-black/50">
           {review.productName ?? 'Store Review'}
