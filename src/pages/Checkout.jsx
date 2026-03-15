@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
 import PageShell from './PageShell'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import CouponPanel from '../components/CouponPanel'
 import useCartStore from '../hooks/useCartStore'
+import useAppliedCoupon from '../hooks/useAppliedCoupon'
+import useCheckoutCharges from '../hooks/useCheckoutCharges'
 import { formatCurrency } from '../utils/formatCurrency'
+import { calculateOrderTotals, getItemLineTotal } from '../utils/pricing'
 import { useAuth } from '../context/AuthContext'
 import { getUserById, updateUser } from '../services/userService'
 import { createOrder, updateOrder } from '../services/orderService'
@@ -21,11 +26,17 @@ const paymentOptions = [
     value: 'online',
     label: 'UPI / Card / Net Banking',
     helper: 'Secure online payment via Razorpay',
+    icons: [
+      { id: 'upi', label: 'UPI', icon: Banknote },
+      { id: 'card', label: 'Card', icon: CreditCard },
+      { id: 'net-banking', label: 'NetBanking', icon: Landmark },
+    ],
   },
   {
     value: 'cod',
     label: 'Cash On Delivery',
     helper: 'Pay when your order is delivered',
+    icons: [{ id: 'cod', label: 'COD', icon: Wallet }],
   },
 ]
 
@@ -42,7 +53,17 @@ const emptyAddressForm = {
 const Checkout = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { items, getTotal, clear } = useCartStore()
+  const { items, clear } = useCartStore()
+  const { charges, chargesLoading } = useCheckoutCharges()
+  const {
+    coupon,
+    couponInput,
+    setCouponInput,
+    couponLoading,
+    couponBreakdown,
+    applyCoupon,
+    removeCoupon,
+  } = useAppliedCoupon(items)
 
   const [selectedAddress, setSelectedAddress] = useState('')
   const [addresses, setAddresses] = useState([])
@@ -81,12 +102,26 @@ const Checkout = () => {
     }
   }, [user])
 
-  const subtotal = getTotal()
-  const total = subtotal
+  const totals = useMemo(() => {
+    return calculateOrderTotals({
+      items,
+      charges,
+      coupon,
+    })
+  }, [charges, coupon, items])
+
+  const subtotal = totals.subtotal
+  const total = totals.total
 
   const canPlaceOrder = useMemo(() => {
-    return Boolean(selectedAddress) && Boolean(paymentMethod) && items.length > 0
-  }, [items.length, paymentMethod, selectedAddress])
+    return (
+      Boolean(selectedAddress) &&
+      Boolean(paymentMethod) &&
+      items.length > 0 &&
+      !chargesLoading &&
+      !couponLoading
+    )
+  }, [chargesLoading, couponLoading, items.length, paymentMethod, selectedAddress])
 
   const handleAddAddress = async () => {
     if (!newAddress.name || !newAddress.line1 || !newAddress.phone || !newAddress.zip) {
@@ -130,7 +165,27 @@ const Checkout = () => {
         email: user.email ?? '',
         status: 'Pending',
         items,
+        subtotal,
         total,
+        charges: {
+          taxPercentage: totals.taxPercentage,
+          taxAmount: totals.taxAmount,
+          shippingCharge: totals.shippingCharge,
+          platformCharge: totals.platformCharge,
+        },
+        coupon: coupon && totals.coupon.isApplicable
+          ? {
+              id: coupon.id,
+              code: coupon.code,
+              appliesToAll: coupon.appliesToAll === true,
+              productId: coupon.productId,
+              productName: coupon.productName,
+              discountType: coupon.discountType,
+              discountValue: coupon.discountValue,
+              maxDiscountAmount: coupon.maxDiscountAmount,
+              appliedDiscount: totals.coupon.discount,
+            }
+          : null,
         paymentMethod,
         paymentStatus: paymentMethod === 'cod' ? 'COD' : 'Initiated',
         address,
@@ -237,7 +292,7 @@ const Checkout = () => {
 
   return (
     <PageShell title="Checkout" subtitle="Select address and payment to place your order.">
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           <Card className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -370,11 +425,7 @@ const Checkout = () => {
                     <p className="text-xs text-illusion-black/55">Qty: {item.quantity}</p>
                   </div>
                   <p className="text-sm font-medium text-illusion-black">
-                    {formatCurrency(
-                      (typeof item.offerPrice === 'number' && item.offerPrice < item.price
-                        ? item.offerPrice
-                        : item.price) * item.quantity
-                    )}
+                    {formatCurrency(getItemLineTotal(item))}
                   </p>
                 </div>
               ))
@@ -400,9 +451,23 @@ const Checkout = () => {
                     onChange={() => setPaymentMethod(option.value)}
                     className="mt-1"
                   />
-                  <div>
+                  <div className="w-full space-y-2">
                     <p className="text-sm font-medium text-illusion-black">{option.label}</p>
                     <p className="text-xs text-illusion-black/55">{option.helper}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {option.icons.map((item) => {
+                        const Icon = item.icon
+                        return (
+                          <span
+                            key={item.id}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-illusion-black/10 bg-white px-2.5 py-1 text-[11px] font-medium text-illusion-black/70"
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            {item.label}
+                          </span>
+                        )
+                      })}
+                    </div>
                   </div>
                 </label>
               ))}
@@ -411,6 +476,15 @@ const Checkout = () => {
 
           <Card className="space-y-4">
             <h2 className="text-lg font-semibold text-illusion-black">Order Summary</h2>
+            <CouponPanel
+              coupon={coupon}
+              couponInput={couponInput}
+              setCouponInput={setCouponInput}
+              couponLoading={couponLoading}
+              couponBreakdown={couponBreakdown}
+              onApply={applyCoupon}
+              onRemove={removeCoupon}
+            />
             <div className="flex items-center justify-between text-sm text-illusion-black/70">
               <span>Items</span>
               <span>{items.length}</span>
@@ -419,10 +493,36 @@ const Checkout = () => {
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            <div className="flex items-center justify-between text-sm text-illusion-black/70">
-              <span>Shipping</span>
-              <span>Calculated at checkout</span>
-            </div>
+            {totals.coupon.discount > 0 ? (
+              <div className="flex items-center justify-between text-sm text-illusion-black/70">
+                <span>Coupon Discount</span>
+                <span>-{formatCurrency(totals.coupon.discount)}</span>
+              </div>
+            ) : null}
+            {totals.taxAmount > 0 ? (
+              <div className="flex items-center justify-between text-sm text-illusion-black/70">
+                <span>Tax ({totals.taxPercentage}%)</span>
+                <span>
+                  {chargesLoading ? 'Loading...' : formatCurrency(totals.taxAmount)}
+                </span>
+              </div>
+            ) : null}
+            {totals.shippingCharge > 0 ? (
+              <div className="flex items-center justify-between text-sm text-illusion-black/70">
+                <span>Shipping</span>
+                <span>
+                  {chargesLoading ? 'Loading...' : formatCurrency(totals.shippingCharge)}
+                </span>
+              </div>
+            ) : null}
+            {totals.platformCharge > 0 ? (
+              <div className="flex items-center justify-between text-sm text-illusion-black/70">
+                <span>Platform</span>
+                <span>
+                  {chargesLoading ? 'Loading...' : formatCurrency(totals.platformCharge)}
+                </span>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between border-t border-illusion-black/10 pt-3 text-base font-semibold text-illusion-black">
               <span>Total</span>
               <span>{formatCurrency(total)}</span>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Trash2, XCircle } from 'lucide-react'
 import AdminLayout from './AdminLayout'
@@ -25,7 +26,7 @@ const OrderRow = ({ order, onDeleteOrder, onSaveStatus }) => {
   const [status, setStatus] = useState(order.status ?? 'Pending')
 
   return (
-    <tr className="border-b border-illusion-black/10 align-top">
+    <tr id={`order-${order.id}`} className="border-b border-illusion-black/10 align-top">
       <td className="px-2 py-2 text-xs font-semibold text-illusion-black">
         #{order.id?.slice(0, 8)}
       </td>
@@ -94,6 +95,7 @@ const OrderRow = ({ order, onDeleteOrder, onSaveStatus }) => {
 }
 
 const AdminOrders = () => {
+  const location = useLocation()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -113,6 +115,15 @@ const AdminOrders = () => {
   useEffect(() => {
     loadOrders()
   }, [])
+
+  useEffect(() => {
+    if (!location.hash) return
+    const id = location.hash.replace('#', '')
+    const element = document.getElementById(id)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [location.hash, orders.length])
 
   const handleSave = async (id, payload) => {
     try {

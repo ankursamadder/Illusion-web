@@ -13,6 +13,10 @@ const collections = {
   coupons: 'coupons',
   charges: 'charges',
   addresses: 'addresses',
+  promotions: 'promotions',
+  footerPages: 'footerPages',
+  contactEnquiries: 'contactEnquiries',
+  careerEnquiries: 'careerEnquiries',
 }
 
 export { app, auth, db, storage, analytics, collections }

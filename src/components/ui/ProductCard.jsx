@@ -54,7 +54,7 @@ const ProductCard = ({ product }) => {
       },
       1
     )
-    navigate('/checkout')
+    navigate('/cart')
   }
 
   return (

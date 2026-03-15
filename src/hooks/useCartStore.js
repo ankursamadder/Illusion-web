@@ -5,6 +5,7 @@ const useCartStore = create(
   persist(
     (set, get) => ({
       items: [],
+      couponCode: '',
       addItem: (product, quantity = 1) => {
         if (!product?.id) return
         const existing = get().items.find((item) => item.id === product.id)
@@ -34,10 +35,22 @@ const useCartStore = create(
         })
       },
       removeItem: (id) =>
-        set({ items: get().items.filter((item) => item.id !== id) }),
+        set((state) => {
+          const nextItems = state.items.filter((item) => item.id !== id)
+          return {
+            items: nextItems,
+            couponCode: nextItems.length ? state.couponCode : '',
+          }
+        }),
       updateQuantity: (id, quantity) => {
         if (quantity <= 0) {
-          set({ items: get().items.filter((item) => item.id !== id) })
+          set((state) => {
+            const nextItems = state.items.filter((item) => item.id !== id)
+            return {
+              items: nextItems,
+              couponCode: nextItems.length ? state.couponCode : '',
+            }
+          })
           return
         }
 
@@ -47,7 +60,9 @@ const useCartStore = create(
           ),
         })
       },
-      clear: () => set({ items: [] }),
+      setCouponCode: (couponCode) => set({ couponCode }),
+      clearCouponCode: () => set({ couponCode: '' }),
+      clear: () => set({ items: [], couponCode: '' }),
       getTotal: () =>
         get().items.reduce((sum, item) => {
           const price =

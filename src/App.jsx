@@ -1,7 +1,8 @@
-﻿import { Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import PromotionsRibbon from './components/PromotionsRibbon'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import Home from './pages/Home'
@@ -14,19 +15,24 @@ import Orders from './pages/Orders'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import FooterPage from './pages/FooterPage'
 import AdminDashboard from './admin/AdminDashboard'
 import AdminProducts from './admin/AdminProducts'
 import AdminProductForm from './admin/AdminProductForm'
 import AdminOrders from './admin/AdminOrders'
+import AdminEnquiries from './admin/AdminEnquiries'
 import AdminReviews from './admin/AdminReviews'
 import AdminCharges from './admin/AdminCharges'
 import AdminUsers from './admin/AdminUsers'
-import AdminContacts from './admin/AdminContacts'
+import AdminFooterLinks from './admin/AdminFooterLinks'
 import AdminCoupons from './admin/AdminCoupons'
+import AdminPromotionsRibbon from './admin/AdminPromotionsRibbon'
+import { footerPageDefinitions } from './config/footerPages'
 
 function App() {
   return (
     <div className="flex min-h-screen flex-col bg-illusion-white text-illusion-black">
+      <PromotionsRibbon />
       <Navbar />
       <main className="flex-1">
         <Routes>
@@ -107,6 +113,14 @@ function App() {
             }
           />
           <Route
+            path="/admin/enquiries"
+            element={
+              <AdminRoute>
+                <AdminEnquiries />
+              </AdminRoute>
+            }
+          />
+          <Route
             path="/admin/reviews"
             element={
               <AdminRoute>
@@ -131,10 +145,10 @@ function App() {
             }
           />
           <Route
-            path="/admin/contacts"
+            path="/admin/footer-links"
             element={
               <AdminRoute>
-                <AdminContacts />
+                <AdminFooterLinks />
               </AdminRoute>
             }
           />
@@ -146,6 +160,21 @@ function App() {
               </AdminRoute>
             }
           />
+          <Route
+            path="/admin/promotions/ribbon"
+            element={
+              <AdminRoute>
+                <AdminPromotionsRibbon />
+              </AdminRoute>
+            }
+          />
+          {footerPageDefinitions.map((page) => (
+            <Route
+              key={page.path}
+              path={page.path}
+              element={<FooterPage definition={page} />}
+            />
+          ))}
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

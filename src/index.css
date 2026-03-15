@@ -40,3 +40,32 @@ img {
   display: block;
   max-width: 100%;
 }
+
+.illusion-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.illusion-marquee__track {
+  display: inline-flex;
+  min-width: max-content;
+  animation: illusion-marquee 20s linear infinite;
+}
+
+.illusion-marquee__item {
+  padding-right: 3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+@keyframes illusion-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}

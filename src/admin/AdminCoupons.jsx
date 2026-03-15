@@ -43,7 +43,7 @@ const AdminCoupons = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [code, setCode] = useState('')
-  const [productId, setProductId] = useState('')
+  const [productId, setProductId] = useState('all')
   const [discountType, setDiscountType] = useState('percentage')
   const [discountValue, setDiscountValue] = useState('')
   const [maxDiscountAmount, setMaxDiscountAmount] = useState('')
@@ -87,7 +87,7 @@ const AdminCoupons = () => {
     }
 
     if (!productId) {
-      toast.error('Please select a product')
+      toast.error('Please select coupon scope')
       return
     }
 
@@ -106,8 +106,12 @@ const AdminCoupons = () => {
       return
     }
 
-    const selectedProduct = products.find((item) => item.id === productId)
-    if (!selectedProduct) {
+    const appliesToAll = productId === 'all'
+    const selectedProduct = appliesToAll
+      ? null
+      : products.find((item) => item.id === productId)
+
+    if (!appliesToAll && !selectedProduct) {
       toast.error('Selected product not found')
       return
     }
@@ -122,8 +126,9 @@ const AdminCoupons = () => {
     try {
       await addDoc(couponsRef, {
         code: normalizedCode,
-        productId,
-        productName: selectedProduct.name ?? '',
+        appliesToAll,
+        productId: appliesToAll ? null : selectedProduct.id,
+        productName: appliesToAll ? 'All Products' : selectedProduct.name ?? '',
         discountType,
         discountValue: parsedDiscount,
         maxDiscountAmount: parsedMaxAmount,
@@ -133,7 +138,7 @@ const AdminCoupons = () => {
       })
       toast.success('Coupon added')
       setCode('')
-      setProductId('')
+      setProductId('all')
       setDiscountType('percentage')
       setDiscountValue('')
       setMaxDiscountAmount('')
@@ -174,7 +179,7 @@ const AdminCoupons = () => {
   return (
     <AdminLayout
       title="Manage Coupons"
-      subtitle="Create coupon codes with fixed or percentage discounts."
+      subtitle="Create coupon codes for all products or a single product."
     >
       <Card>
         <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" onSubmit={handleCreateCoupon}>
@@ -187,13 +192,13 @@ const AdminCoupons = () => {
           />
 
           <label className="flex w-full flex-col gap-2 text-sm">
-            <span className="font-medium text-illusion-black">Select product</span>
+            <span className="font-medium text-illusion-black">Apply coupon to</span>
             <select
               className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
               value={productId}
               onChange={(event) => setProductId(event.target.value)}
             >
-              <option value="">Choose a product</option>
+              <option value="all">All Products</option>
               {activeProducts.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.name}

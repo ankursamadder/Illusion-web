@@ -121,7 +121,7 @@ const ProductDetails = () => {
       },
       1
     )
-    navigate('/checkout')
+    navigate('/cart')
   }
 
   const handleShare = async () => {

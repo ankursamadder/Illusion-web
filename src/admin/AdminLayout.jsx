@@ -1,27 +1,32 @@
 import { NavLink } from 'react-router-dom'
 import {
+  FileText,
   LayoutDashboard,
+  Megaphone,
   Package,
   PlusCircle,
   ClipboardList,
   MessageSquare,
+  MessageCircle,
   CreditCard,
   Users,
-  Phone,
   Ticket,
 } from 'lucide-react'
 import Container from '../components/Container'
+import AdminNotificationsMenu from './AdminNotificationsMenu'
 
 const sidebarItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { label: 'Manage Products', icon: Package, href: '/admin/products' },
   { label: 'Add Product', icon: PlusCircle, href: '/admin/products/new' },
   { label: 'Manage Orders', icon: ClipboardList, href: '/admin/orders' },
+  { label: 'Enquiries', icon: MessageCircle, href: '/admin/enquiries' },
   { label: 'Manage Reviews', icon: MessageSquare, href: '/admin/reviews' },
   { label: 'Manage Charges', icon: CreditCard, href: '/admin/charges' },
   { label: 'Manage Users', icon: Users, href: '/admin/users' },
-  { label: 'Manage Company Contacts', icon: Phone, href: '/admin/contacts' },
+  { label: 'Footer Links', icon: FileText, href: '/admin/footer-links' },
   { label: 'Manage Coupons', icon: Ticket, href: '/admin/coupons' },
+  { label: 'Promotions Ribbon', icon: Megaphone, href: '/admin/promotions/ribbon' },
 ]
 
 const AdminLayout = ({ title, subtitle, children }) => {
@@ -63,15 +68,18 @@ const AdminLayout = ({ title, subtitle, children }) => {
           </aside>
 
           <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-semibold text-illusion-black">
-                {title}
-              </h1>
-              {subtitle ? (
-                <p className="mt-1 text-sm text-illusion-black/60">
-                  {subtitle}
-                </p>
-              ) : null}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-semibold text-illusion-black">
+                  {title}
+                </h1>
+                {subtitle ? (
+                  <p className="mt-1 text-sm text-illusion-black/60">
+                    {subtitle}
+                  </p>
+                ) : null}
+              </div>
+              <AdminNotificationsMenu />
             </div>
             {children}
           </div>
