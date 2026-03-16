@@ -26,7 +26,7 @@ const sidebarItems = [
   { label: 'Manage Users', icon: Users, href: '/admin/users' },
   { label: 'Footer Links', icon: FileText, href: '/admin/footer-links' },
   { label: 'Manage Coupons', icon: Ticket, href: '/admin/coupons' },
-  { label: 'Promotions Ribbon', icon: Megaphone, href: '/admin/promotions/ribbon' },
+  { label: 'Promotions', icon: Megaphone, href: '/admin/promotions' },
 ]
 
 const AdminLayout = ({ title, subtitle, children }) => {

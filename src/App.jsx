@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import PromotionsRibbon from './components/PromotionsRibbon'
+import HomeNavbarBanner from './components/HomeNavbarBanner'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import Home from './pages/Home'
@@ -26,7 +27,7 @@ import AdminCharges from './admin/AdminCharges'
 import AdminUsers from './admin/AdminUsers'
 import AdminFooterLinks from './admin/AdminFooterLinks'
 import AdminCoupons from './admin/AdminCoupons'
-import AdminPromotionsRibbon from './admin/AdminPromotionsRibbon'
+import AdminPromotions from './admin/AdminPromotionsRibbon'
 import { footerPageDefinitions } from './config/footerPages'
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
     <div className="flex min-h-screen flex-col bg-illusion-white text-illusion-black">
       <PromotionsRibbon />
       <Navbar />
+      <HomeNavbarBanner />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -161,10 +163,18 @@ function App() {
             }
           />
           <Route
+            path="/admin/promotions"
+            element={
+              <AdminRoute>
+                <AdminPromotions />
+              </AdminRoute>
+            }
+          />
+          <Route
             path="/admin/promotions/ribbon"
             element={
               <AdminRoute>
-                <AdminPromotionsRibbon />
+                <AdminPromotions />
               </AdminRoute>
             }
           />
