@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   Store,
   User,
+  X,
 } from 'lucide-react'
 import clsx from 'clsx'
 import Container from './Container'
@@ -47,11 +48,13 @@ const Navbar = () => {
   const [pincode, setPincode] = useState('')
   const [searchValue, setSearchValue] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [searchProducts, setSearchProducts] = useState([])
   const [loadingProducts, setLoadingProducts] = useState(true)
 
   const menuRef = useRef(null)
-  const searchRef = useRef(null)
+  const desktopSearchRef = useRef(null)
+  const mobileSearchRef = useRef(null)
 
   useEffect(() => {
     const savedPincode = localStorage.getItem('illusion_delivery_pincode')
@@ -94,8 +97,12 @@ const Navbar = () => {
         setOpen(false)
       }
 
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
+      const desktopSearchContains = desktopSearchRef.current?.contains(event.target)
+      const mobileSearchContains = mobileSearchRef.current?.contains(event.target)
+
+      if (!desktopSearchContains && !mobileSearchContains) {
         setSearchOpen(false)
+        setMobileSearchOpen(false)
       }
     }
 
@@ -127,6 +134,7 @@ const Navbar = () => {
   const handleSelectProduct = (productId) => {
     navigate(`/product/${productId}`)
     setSearchOpen(false)
+    setMobileSearchOpen(false)
     setSearchValue('')
   }
 
@@ -139,7 +147,7 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-40 border-b border-illusion-black/5 bg-white/90 backdrop-blur">
       <Container className="py-3">
-        <div className="grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center">
+        <div className="grid grid-cols-[auto_1fr] items-center gap-3 md:grid-cols-[auto_minmax(0,1fr)_auto]">
           <div className="flex items-center gap-3">
             <NavLink
               to="/"
@@ -172,14 +180,17 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="relative" ref={searchRef}>
+          <div className="relative hidden md:block" ref={desktopSearchRef}>
             <form onSubmit={handleSearchSubmit}>
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-illusion-black/45" />
               <input
                 type="text"
                 value={searchValue}
                 onChange={(event) => setSearchValue(event.target.value)}
-                onFocus={() => setSearchOpen(true)}
+                onFocus={() => {
+                  setSearchOpen(true)
+                  setMobileSearchOpen(false)
+                }}
                 placeholder="Search by name, description, category or price"
                 className="h-11 w-full rounded-2xl border border-illusion-black/10 bg-white pl-10 pr-4 text-sm text-illusion-black shadow-soft outline-none transition focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
               />
@@ -230,6 +241,22 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              className={clsx(iconButtonBase, 'md:hidden', mobileSearchOpen && 'text-illusion-black')}
+              aria-label="Search"
+              onClick={() => {
+                setMobileSearchOpen((previous) => !previous)
+                setSearchOpen(false)
+              }}
+            >
+              {mobileSearchOpen ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+            </button>
+
             <NavLink to="/shop" className={iconButtonBase} aria-label="Store">
               <Store className="h-4 w-4" />
             </NavLink>
@@ -307,6 +334,65 @@ const Navbar = () => {
             </div>
           </div>
         </div>
+
+        {mobileSearchOpen ? (
+          <div className="relative mt-3 md:hidden" ref={mobileSearchRef}>
+            <form onSubmit={handleSearchSubmit}>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-illusion-black/45" />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                onFocus={() => setSearchOpen(true)}
+                placeholder="Search by name, description, category or price"
+                className="h-11 w-full rounded-2xl border border-illusion-black/10 bg-white pl-10 pr-4 text-sm text-illusion-black shadow-soft outline-none transition focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
+              />
+            </form>
+
+            {searchValue.trim() ? (
+              <div className="mt-2 rounded-2xl border border-illusion-black/10 bg-white p-2 shadow-card">
+                {loadingProducts ? (
+                  <p className="px-3 py-2 text-sm text-illusion-black/60">Searching...</p>
+                ) : searchResults.length ? (
+                  <div className="space-y-1">
+                    {searchResults.map((product) => {
+                      const displayPrice =
+                        typeof product.offerPrice === 'number' &&
+                        product.offerPrice < product.price
+                          ? product.offerPrice
+                          : product.price
+
+                      return (
+                        <button
+                          type="button"
+                          key={product.id}
+                          onClick={() => handleSelectProduct(product.id)}
+                          className="flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-illusion-blush/40"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-illusion-black">
+                              {product.name}
+                            </p>
+                            <p className="truncate text-xs text-illusion-black/55">
+                              {product.category || product.description || 'Product'}
+                            </p>
+                          </div>
+                          <p className="shrink-0 text-xs font-medium text-illusion-black/70">
+                            {formatCurrency(displayPrice ?? 0)}
+                          </p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="px-3 py-2 text-sm text-illusion-black/60">
+                    No matching products found.
+                  </p>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </Container>
     </header>
   )
