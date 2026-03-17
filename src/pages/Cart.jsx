@@ -48,7 +48,7 @@ const Cart = () => {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                   <div className="h-16 w-16 overflow-hidden rounded-xl bg-illusion-blush/40">
                     {item.image ? (
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={item.image}
                         alt={item.name}
                         className="h-full w-full object-cover"

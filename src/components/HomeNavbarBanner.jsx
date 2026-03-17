@@ -61,6 +61,9 @@ const HomeNavbarBanner = () => {
                 key={`${imageUrl}_${index}`}
                 src={imageUrl}
                 alt={`Illusion promotions banner ${index + 1}`}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : 'auto'}
+                decoding="async"
                 className="block h-auto w-full shrink-0 object-cover"
               />
             ))}
@@ -70,6 +73,9 @@ const HomeNavbarBanner = () => {
         <img
           src={images[0]}
           alt="Illusion promotions banner"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="block h-auto w-full object-cover"
         />
       )}

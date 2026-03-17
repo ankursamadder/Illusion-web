@@ -12,6 +12,7 @@ import {
   uploadBytes,
 } from 'firebase/storage'
 import { db, collections, storage } from '../firebase/firebase'
+import { optimizeImageFile } from '../utils/imageOptimization'
 
 const ribbonRef = doc(db, collections.promotions, 'ribbon')
 const homeNavbarBannerRef = doc(db, collections.promotions, 'homeNavbarBanner')
@@ -138,13 +139,20 @@ export const saveHomeNavbarBannerPromotion = async (payload) => {
 }
 
 export const uploadHomeNavbarBanner = async (file) => {
-  const extension = file.name.includes('.') ? file.name.split('.').pop() : 'jpg'
+  const optimizedFile = await optimizeImageFile(file, {
+    maxWidth: 3000,
+    maxHeight: 700,
+    quality: 0.78,
+  })
   const safeName = `home-navbar-banner-${Date.now()}-${Math.random()
     .toString(36)
-    .slice(2, 8)}.${extension}`
+    .slice(2, 8)}.webp`
   const bannerRef = ref(storage, `promotions/popup/${safeName}`)
 
-  await uploadBytes(bannerRef, file)
+  await uploadBytes(bannerRef, optimizedFile, {
+    contentType: optimizedFile.type,
+    cacheControl: 'public,max-age=31536000,immutable',
+  })
   const imageUrl = await getDownloadURL(bannerRef)
 
   return {

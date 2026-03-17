@@ -78,6 +78,17 @@ const ProductDetails = () => {
     }
   }, [images])
 
+  const plainDescription = useMemo(() => {
+    const raw = product?.description ?? ''
+    return raw.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+  }, [product?.description])
+
+  const descriptionHtml = useMemo(() => {
+    const raw = product?.description ?? ''
+    if (/<[a-z][\s\S]*>/i.test(raw)) return raw
+    return raw.replace(/\n/g, '<br />')
+  }, [product?.description])
+
   if (loading) {
     return (
       <PageShell title="Product" subtitle="Loading product details.">
@@ -129,7 +140,7 @@ const ProductDetails = () => {
       if (navigator.share) {
         await navigator.share({
           title: product.name,
-          text: product.description,
+          text: plainDescription,
           url: window.location.href,
         })
       } else {
@@ -159,7 +170,7 @@ const ProductDetails = () => {
                         : 'border-illusion-black/10'
                     }`}
                   >
-                    <img src={img} alt="" className="h-full w-full object-cover" />
+                    <img loading="lazy" decoding="async" src={img} alt="" className="h-full w-full object-cover" />
                   </button>
                 ))
               ) : (
@@ -170,7 +181,7 @@ const ProductDetails = () => {
             </div>
             <div className="overflow-hidden rounded-3xl bg-illusion-blush/40">
               {selectedImage ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={selectedImage}
                   alt={product.name}
                   className="h-full w-full object-cover"
@@ -190,9 +201,10 @@ const ProductDetails = () => {
               <h1 className="text-3xl font-semibold text-illusion-black">
                 {product.name}
               </h1>
-              <p className="mt-2 text-sm text-illusion-black/60">
-                {product.description}
-              </p>
+              <div
+                className="mt-2 text-sm text-illusion-black/60 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:text-illusion-black"
+                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+              />
             </div>
             <div className="flex gap-2">
               <IconButton

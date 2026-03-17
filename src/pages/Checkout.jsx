@@ -159,11 +159,11 @@ const Checkout = () => {
     const address = addresses.find((item) => item.id === selectedAddress) ?? null
 
     try {
-      const orderId = await createOrder({
+      const createdOrder = await createOrder({
         userId: user.uid,
         customerName: user.name ?? '',
         email: user.email ?? '',
-        status: 'Pending',
+        status: paymentMethod === 'cod' ? 'Placed COD' : 'Initiated',
         items,
         subtotal,
         total,
@@ -191,6 +191,8 @@ const Checkout = () => {
         address,
         shipment: {},
       })
+
+      const orderId = createdOrder.id
 
       if (paymentMethod === 'cod') {
         toast.success('Order placed successfully')
@@ -251,6 +253,7 @@ const Checkout = () => {
             await updateOrder(orderId, {
               status: verification.status ?? 'Paid',
               paymentStatus: 'Success',
+              initiatedReason: '',
               paymentId: response.razorpay_payment_id,
               razorpayOrderId: response.razorpay_order_id,
             })
@@ -259,7 +262,10 @@ const Checkout = () => {
             navigate('/orders')
           } catch (verifyError) {
             await updateOrder(orderId, {
+              status: 'Initiated',
               paymentStatus: 'Failed',
+              initiatedReason:
+                verifyError?.message ?? 'Payment verification failed',
               paymentError: verifyError?.message ?? 'Payment verification failed',
             })
             toast.error(verifyError?.message ?? 'Payment verification failed')
@@ -268,7 +274,9 @@ const Checkout = () => {
         modal: {
           ondismiss: async () => {
             await updateOrder(orderId, {
+              status: 'Initiated',
               paymentStatus: 'Cancelled',
+              initiatedReason: 'Customer closed the payment window',
             })
           },
         },
@@ -277,7 +285,9 @@ const Checkout = () => {
       const razorpay = new window.Razorpay(options)
       razorpay.on('payment.failed', async (response) => {
         await updateOrder(orderId, {
+          status: 'Initiated',
           paymentStatus: 'Failed',
+          initiatedReason: response.error?.description ?? 'Payment failed',
           paymentError: response.error?.description ?? 'Payment failed',
         })
         toast.error('Payment failed')
@@ -417,7 +427,7 @@ const Checkout = () => {
                 >
                   <div className="h-14 w-14 overflow-hidden rounded-xl bg-illusion-blush/40">
                     {item.image ? (
-                      <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                      <img loading="lazy" decoding="async" src={item.image} alt={item.name} className="h-full w-full object-cover" />
                     ) : null}
                   </div>
                   <div className="flex-1">

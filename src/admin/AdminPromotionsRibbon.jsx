@@ -299,7 +299,7 @@ const AdminPromotions = () => {
           {activeImages.length ? (
             <div className="grid gap-2 md:grid-cols-2">
               {activeImages.map((item, index) => (
-                <img
+                <img loading="lazy" decoding="async"
                   key={getImageKey(item) || `${item.imageUrl}_${index}`}
                   src={item.imageUrl}
                   alt={`Home navbar banner ${index + 1}`}
@@ -387,7 +387,7 @@ const AdminPromotions = () => {
                           : 'border-illusion-black/10'
                       }`}
                     >
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={item.imageUrl}
                         alt={`Banner library ${index + 1}`}
                         className="h-28 w-full object-cover"

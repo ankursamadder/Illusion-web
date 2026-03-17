@@ -17,7 +17,7 @@ const Wishlist = () => {
             <Card key={item.id} className="flex flex-col gap-4 md:flex-row md:items-center">
               <div className="h-20 w-20 overflow-hidden rounded-2xl bg-illusion-blush/40">
                 {item.image ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={item.image}
                     alt={item.name}
                     className="h-full w-full object-cover"

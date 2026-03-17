@@ -5,48 +5,194 @@ import { Trash2, XCircle } from 'lucide-react'
 import AdminLayout from './AdminLayout'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
+import Modal from '../components/ui/Modal'
 import StatusBadge from '../components/StatusBadge'
-import { deleteOrder, getOrders, updateOrder } from '../services/orderService'
+import {
+  deleteOrder,
+  getDisplayOrderStatus,
+  getOrders,
+  isInitiatedOrder,
+  updateOrder,
+} from '../services/orderService'
 import { formatCurrency } from '../utils/formatCurrency'
 
-const statusOptions = ['Pending', 'Paid', 'Shipped', 'Delivered', 'Cancelled']
+const statusOptions = [
+  'Placed COD',
+  'Paid',
+  'Shipped',
+  'Delivered',
+  'Cancelled',
+]
+
 const filterOptions = [
   { value: 'all', label: 'All Orders' },
-  { value: 'initial', label: 'Initial Placed' },
-  ...statusOptions.map((status) => ({ value: status.toLowerCase(), label: status })),
+  ...statusOptions.map((status) => ({
+    value: status.toLowerCase(),
+    label: status,
+  })),
 ]
 
 const formatDate = (value) => {
   if (!value) return '-'
-  if (typeof value.toDate === 'function') return value.toDate().toLocaleString()
+  if (typeof value?.toDate === 'function') return value.toDate().toLocaleString()
   return new Date(value).toLocaleString()
 }
 
-const OrderRow = ({ order, onDeleteOrder, onSaveStatus }) => {
-  const [status, setStatus] = useState(order.status ?? 'Pending')
+const getOrderNumber = (order) => order.orderNumber ?? order.id?.slice(0, 8)
+
+const getItemUnitAmount = (item) => {
+  const hasOffer =
+    typeof item.offerPrice === 'number' &&
+    typeof item.price === 'number' &&
+    item.offerPrice < item.price
+  return hasOffer ? item.offerPrice : item.price ?? 0
+}
+
+const OrderDetails = ({ order }) => {
+  if (!order) return null
+
+  const couponDiscount = Number(order?.coupon?.appliedDiscount ?? 0)
+  const taxAmount = Number(order?.charges?.taxAmount ?? 0)
+  const shippingCharge = Number(order?.charges?.shippingCharge ?? 0)
+  const platformCharge = Number(order?.charges?.platformCharge ?? 0)
 
   return (
-    <tr id={`order-${order.id}`} className="border-b border-illusion-black/10 align-top">
-      <td className="px-2 py-2 text-xs font-semibold text-illusion-black">
-        #{order.id?.slice(0, 8)}
+    <div className="space-y-4 text-sm">
+      <div className="grid gap-2 md:grid-cols-2">
+        <p><span className="font-semibold text-illusion-black">Order ID:</span> {getOrderNumber(order)}</p>
+        <p><span className="font-semibold text-illusion-black">Doc ID:</span> {order.id}</p>
+        <p><span className="font-semibold text-illusion-black">Date:</span> {formatDate(order.createdAt)}</p>
+        <p><span className="font-semibold text-illusion-black">Status:</span> {getDisplayOrderStatus(order)}</p>
+        <p><span className="font-semibold text-illusion-black">Payment Method:</span> {order.paymentMethod ?? '-'}</p>
+        <p><span className="font-semibold text-illusion-black">Payment Status:</span> {order.paymentStatus ?? '-'}</p>
+      </div>
+
+      <div className="rounded-2xl border border-illusion-black/10 bg-white p-3">
+        <p className="mb-1 font-semibold text-illusion-black">Customer</p>
+        <p>{order.customerName ?? '-'}</p>
+        <p>{order.email ?? '-'}</p>
+        {order.address ? (
+          <>
+            <p>{order.address.name ?? '-'}</p>
+            <p>{order.address.line1 ?? '-'}, {order.address.city ?? '-'}, {order.address.state ?? '-'} {order.address.zip ?? '-'}</p>
+            <p>{order.address.phone ?? '-'}</p>
+          </>
+        ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-illusion-black/10 bg-white p-3">
+        <p className="mb-2 font-semibold text-illusion-black">Items</p>
+        <div className="space-y-2">
+          {(order.items ?? []).map((item) => (
+            <div
+              key={`${order.id}_${item.id}`}
+              className="flex items-center justify-between gap-3 text-xs"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 overflow-hidden rounded-xl bg-illusion-blush/30">
+                  {item.image ? (
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={item.image}
+                      alt={item.name ?? 'Product'}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                <div>
+                  <p className="font-medium text-illusion-black">{item.name ?? 'Item'}</p>
+                  <p className="text-illusion-black/60">Qty: {item.quantity ?? 1}</p>
+                </div>
+              </div>
+              <div className="text-right text-illusion-black/70">
+                <p>{formatCurrency(getItemUnitAmount(item))} x {item.quantity ?? 1}</p>
+                <p className="font-medium text-illusion-black">
+                  {formatCurrency(getItemUnitAmount(item) * (item.quantity ?? 1))}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-illusion-black/10 bg-white p-3">
+        <p className="mb-2 font-semibold text-illusion-black">Summary</p>
+        <div className="space-y-1 text-xs text-illusion-black/70">
+          <div className="flex items-center justify-between">
+            <span>Subtotal</span>
+            <span>{formatCurrency(order.subtotal ?? 0)}</span>
+          </div>
+          {couponDiscount > 0 ? (
+            <div className="flex items-center justify-between">
+              <span>Coupon ({order.coupon?.code ?? 'Applied'})</span>
+              <span>-{formatCurrency(couponDiscount)}</span>
+            </div>
+          ) : null}
+          {taxAmount > 0 ? (
+            <div className="flex items-center justify-between">
+              <span>Tax</span>
+              <span>{formatCurrency(taxAmount)}</span>
+            </div>
+          ) : null}
+          {shippingCharge > 0 ? (
+            <div className="flex items-center justify-between">
+              <span>Shipping</span>
+              <span>{formatCurrency(shippingCharge)}</span>
+            </div>
+          ) : null}
+          {platformCharge > 0 ? (
+            <div className="flex items-center justify-between">
+              <span>Platform</span>
+              <span>{formatCurrency(platformCharge)}</span>
+            </div>
+          ) : null}
+          <div className="mt-1 flex items-center justify-between border-t border-illusion-black/10 pt-1.5 text-sm font-semibold text-illusion-black">
+            <span>Paid Amount</span>
+            <span>{formatCurrency(order.total ?? 0)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const OrderRow = ({ order, onDeleteOrder, onSaveStatus, onOpenDetails }) => {
+  const [status, setStatus] = useState(getDisplayOrderStatus(order))
+
+  useEffect(() => {
+    setStatus(getDisplayOrderStatus(order))
+  }, [order.paymentMethod, order.status])
+
+  return (
+    <tr
+      id={`order-${order.id}`}
+      className="cursor-pointer border-b border-illusion-black/10 align-top transition hover:bg-illusion-blush/20"
+      onClick={() => onOpenDetails(order)}
+    >
+      <td className="px-3 py-3 text-xs font-semibold text-illusion-black">
+        #{getOrderNumber(order)}
       </td>
-      <td className="px-2 py-2 text-xs text-illusion-black">
+      <td className="px-3 py-3 text-xs text-illusion-black">
         <p className="font-medium">{order.customerName ?? '-'}</p>
         <p className="text-[11px] text-illusion-black/60">{order.email ?? '-'}</p>
       </td>
-      <td className="px-2 py-2 text-xs text-illusion-black">
+      <td className="px-3 py-3 text-xs text-illusion-black">
+        {(order.items ?? []).slice(0, 2).map((item) => item.name).join(', ') || '-'}
+      </td>
+      <td className="px-3 py-3 text-xs text-illusion-black">
         {formatCurrency(order.total ?? 0)}
       </td>
-      <td className="px-2 py-2">
+      <td className="px-3 py-3">
         <StatusBadge status={status} />
       </td>
-      <td className="px-2 py-2 text-xs text-illusion-black/70">
+      <td className="px-3 py-3 text-xs text-illusion-black/70">
         {formatDate(order.createdAt)}
       </td>
-      <td className="px-2 py-2">
-        <div className="flex min-w-[220px] flex-wrap items-center gap-1.5">
+      <td className="px-3 py-3" onClick={(event) => event.stopPropagation()}>
+        <div className="w-[260px] space-y-2">
           <select
-            className="rounded-full border border-illusion-black/10 bg-white px-2 py-1 text-[11px] text-illusion-black outline-none"
+            className="w-full rounded-full border border-illusion-black/10 bg-white px-3 py-1.5 text-xs text-illusion-black outline-none"
             value={status}
             onChange={(event) => setStatus(event.target.value)}
           >
@@ -57,37 +203,39 @@ const OrderRow = ({ order, onDeleteOrder, onSaveStatus }) => {
             ))}
           </select>
 
-          <Button
-            size="sm"
-            className="px-2 py-1 text-[11px]"
-            onClick={() => onSaveStatus(order.id, { status })}
-          >
-            Save
-          </Button>
+          <div className="grid grid-cols-4 gap-1.5">
+            <Button
+              size="sm"
+              className="px-0 py-1 text-[11px]"
+              onClick={() => onSaveStatus(order.id, { status })}
+            >
+              Save
+            </Button>
 
-          <Button
-            size="sm"
-            variant="secondary"
-            className="gap-1 px-2 py-1 text-[11px]"
-            disabled={status === 'Cancelled' || status === 'Delivered'}
-            onClick={() => {
-              setStatus('Cancelled')
-              onSaveStatus(order.id, { status: 'Cancelled' })
-            }}
-          >
-            <XCircle className="h-3.5 w-3.5" />
-            Cancel
-          </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="gap-1 px-0 py-1 text-[11px]"
+              disabled={status === 'Cancelled' || status === 'Delivered'}
+              onClick={() => {
+                setStatus('Cancelled')
+                onSaveStatus(order.id, { status: 'Cancelled' })
+              }}
+            >
+              <XCircle className="h-3 w-3" />
+              Cancel
+            </Button>
 
-          <Button
-            size="sm"
-            variant="ghost"
-            className="gap-1 border border-red-200 px-2 py-1 text-[11px] text-red-500 hover:text-red-600"
-            onClick={() => onDeleteOrder(order.id)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete
-          </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="col-span-2 gap-1 border border-red-200 px-0 py-1 text-[11px] text-red-500 hover:text-red-600"
+              onClick={() => onDeleteOrder(order.id)}
+            >
+              <Trash2 className="h-3 w-3" />
+              Delete
+            </Button>
+          </div>
         </div>
       </td>
     </tr>
@@ -99,6 +247,7 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  const [selectedOrder, setSelectedOrder] = useState(null)
 
   const loadOrders = async () => {
     setLoading(true)
@@ -150,27 +299,27 @@ const AdminOrders = () => {
     }
   }
 
+  const nonInitiatedOrders = useMemo(
+    () => orders.filter((order) => !isInitiatedOrder(order)),
+    [orders]
+  )
+
   const filteredOrders = useMemo(() => {
-    if (filter === 'all') return orders
+    if (filter === 'all') return nonInitiatedOrders
 
-    if (filter === 'initial') {
-      return orders.filter((order) => {
-        const status = String(order.status ?? 'Pending').toLowerCase()
-        const paymentStatus = String(order.paymentStatus ?? '').toLowerCase()
-        return status === 'pending' || status === 'placed' || paymentStatus === 'initiated'
-      })
-    }
-
-    return orders.filter(
-      (order) => String(order.status ?? 'Pending').toLowerCase() === filter
+    return nonInitiatedOrders.filter(
+      (order) => getDisplayOrderStatus(order).toLowerCase() === filter
     )
-  }, [filter, orders])
+  }, [filter, nonInitiatedOrders])
 
   return (
-    <AdminLayout title="Manage Orders" subtitle="Track and update order progress.">
+    <AdminLayout
+      title="Manage Orders"
+      subtitle="Track and update order progress. Click any order to view full details."
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-illusion-black/60">
-          Showing {filteredOrders.length} of {orders.length} orders
+          Showing {filteredOrders.length} of {nonInitiatedOrders.length} orders
         </p>
         <label className="flex items-center gap-2 text-xs text-illusion-black/70">
           Filter
@@ -196,22 +345,25 @@ const AdminOrders = () => {
             <table className="min-w-full text-left">
               <thead className="bg-illusion-blush/30">
                 <tr>
-                  <th className="px-2 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
                     Order ID
                   </th>
-                  <th className="px-2 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
                     Customer
                   </th>
-                  <th className="px-2 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                    Product
+                  </th>
+                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
                     Amount
                   </th>
-                  <th className="px-2 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
                     Status
                   </th>
-                  <th className="px-2 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
                     Date
                   </th>
-                  <th className="px-2 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
                     Actions
                   </th>
                 </tr>
@@ -223,6 +375,7 @@ const AdminOrders = () => {
                     order={order}
                     onDeleteOrder={handleDelete}
                     onSaveStatus={handleSave}
+                    onOpenDetails={setSelectedOrder}
                   />
                 ))}
               </tbody>
@@ -234,6 +387,15 @@ const AdminOrders = () => {
           No orders found for this filter.
         </Card>
       )}
+
+      <Modal
+        open={Boolean(selectedOrder)}
+        onClose={() => setSelectedOrder(null)}
+        title={selectedOrder ? `Order #${getOrderNumber(selectedOrder)}` : 'Order'}
+        className="max-w-3xl"
+      >
+        <OrderDetails order={selectedOrder} />
+      </Modal>
     </AdminLayout>
   )
 }

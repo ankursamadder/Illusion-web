@@ -1,8 +1,11 @@
 const statusStyles = {
   paid: 'bg-green-100 text-green-700',
   pending: 'bg-yellow-100 text-yellow-700',
+  initiated: 'bg-yellow-100 text-yellow-700',
+  'placed cod': 'bg-indigo-100 text-indigo-700',
   cancelled: 'bg-red-100 text-red-700',
   shipped: 'bg-blue-100 text-blue-700',
+  delivered: 'bg-emerald-100 text-emerald-700',
 }
 
 const StatusBadge = ({ status }) => {

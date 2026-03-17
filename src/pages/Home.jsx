@@ -28,6 +28,10 @@ const ProductSection = ({
   loading,
   onViewAll,
 }) => {
+  if (!loading && !products.length) {
+    return null
+  }
+
   return (
     <section className="py-12">
       <Container>
@@ -49,11 +53,7 @@ const ProductSection = ({
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-        ) : (
-          <Card className="text-sm text-illusion-black/60">
-            No products available in this section.
-          </Card>
-        )}
+        ) : null}
       </Container>
     </section>
   )

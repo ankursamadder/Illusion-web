@@ -38,6 +38,7 @@ const AdminNotificationsMenu = () => {
     getStoredSeenNotifications()
   )
   const menuRef = useRef(null)
+  const visibleNotificationsRef = useRef([])
 
   const seenNotificationSet = useMemo(
     () => new Set(seenNotifications),
@@ -48,6 +49,10 @@ const AdminNotificationsMenu = () => {
       notifications.filter((item) => !seenNotificationSet.has(getNotificationKey(item))),
     [notifications, seenNotificationSet]
   )
+
+  useEffect(() => {
+    visibleNotificationsRef.current = visibleNotifications
+  }, [visibleNotifications])
 
   const unreadCount = visibleNotifications.length
 
@@ -82,6 +87,20 @@ const AdminNotificationsMenu = () => {
     )
   }
 
+  const markVisibleNotificationsSeen = (items = []) => {
+    if (!items.length) return
+
+    setSeenNotifications((previous) => {
+      const seenSet = new Set(previous)
+      items.forEach((item) => seenSet.add(getNotificationKey(item)))
+      const next = Array.from(seenSet).slice(0, 200)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SEEN_NOTIFICATIONS_KEY, JSON.stringify(next))
+      }
+      return next
+    })
+  }
+
   useEffect(() => {
     loadNotifications()
   }, [])
@@ -89,6 +108,7 @@ const AdminNotificationsMenu = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
+        markVisibleNotificationsSeen(visibleNotificationsRef.current)
         setOpen(false)
       }
     }
@@ -98,11 +118,14 @@ const AdminNotificationsMenu = () => {
   }, [])
 
   const handleToggle = async () => {
-    const next = !open
-    setOpen(next)
-    if (next) {
-      await loadNotifications()
+    if (open) {
+      markVisibleNotificationsSeen(visibleNotificationsRef.current)
+      setOpen(false)
+      return
     }
+
+    setOpen(true)
+    await loadNotifications()
   }
 
   return (

@@ -33,6 +33,7 @@ const AdminReviews = () => {
   const [manualRating, setManualRating] = useState('5')
   const [manualComment, setManualComment] = useState('')
   const [manualProductId, setManualProductId] = useState('')
+  const [showAddReviewForm, setShowAddReviewForm] = useState(false)
 
   const activeProducts = useMemo(
     () => products.filter((item) => item.active !== false),
@@ -94,6 +95,7 @@ const AdminReviews = () => {
       setManualRating('5')
       setManualComment('')
       setManualProductId('')
+      setShowAddReviewForm(false)
       await loadData()
     } catch (error) {
       toast.error(error?.message ?? 'Failed to add review')
@@ -130,60 +132,73 @@ const AdminReviews = () => {
       title="Manage Reviews"
       subtitle="Approve, delete, and manually add customer reviews."
     >
-      <Card>
-        <form
-          className="grid gap-3 md:grid-cols-2"
-          onSubmit={handleAddManualReview}
-        >
-          <Input
-            label="Reviewer name"
-            value={manualName}
-            onChange={(event) => setManualName(event.target.value)}
-            placeholder="e.g. Priya"
-          />
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-illusion-black">Manual Review</h3>
+          <Button
+            type="button"
+            variant={showAddReviewForm ? 'secondary' : 'primary'}
+            onClick={() => setShowAddReviewForm((prev) => !prev)}
+          >
+            {showAddReviewForm ? 'Close' : 'Add Review'}
+          </Button>
+        </div>
 
-          <label className="flex w-full flex-col gap-2 text-sm">
-            <span className="font-medium text-illusion-black">Product</span>
-            <select
-              className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
-              value={manualProductId}
-              onChange={(event) => setManualProductId(event.target.value)}
-            >
-              <option value="">General feedback</option>
-              {activeProducts.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <Input
-            label="Rating (1-5)"
-            type="number"
-            min="1"
-            max="5"
-            value={manualRating}
-            onChange={(event) => setManualRating(event.target.value)}
-          />
-
-          <label className="flex w-full flex-col gap-2 text-sm md:col-span-2">
-            <span className="font-medium text-illusion-black">Comment</span>
-            <textarea
-              rows={4}
-              className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none transition-all duration-200 focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
-              value={manualComment}
-              onChange={(event) => setManualComment(event.target.value)}
-              placeholder="Write review feedback..."
+        {showAddReviewForm ? (
+          <form
+            className="grid gap-3 md:grid-cols-2"
+            onSubmit={handleAddManualReview}
+          >
+            <Input
+              label="Reviewer name"
+              value={manualName}
+              onChange={(event) => setManualName(event.target.value)}
+              placeholder="e.g. Priya"
             />
-          </label>
 
-          <div className="md:col-span-2">
-            <Button type="submit" disabled={saving || loading}>
-              {saving ? 'Adding...' : 'Add Review'}
-            </Button>
-          </div>
-        </form>
+            <label className="flex w-full flex-col gap-2 text-sm">
+              <span className="font-medium text-illusion-black">Product</span>
+              <select
+                className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
+                value={manualProductId}
+                onChange={(event) => setManualProductId(event.target.value)}
+              >
+                <option value="">General feedback</option>
+                {activeProducts.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <Input
+              label="Rating (1-5)"
+              type="number"
+              min="1"
+              max="5"
+              value={manualRating}
+              onChange={(event) => setManualRating(event.target.value)}
+            />
+
+            <label className="flex w-full flex-col gap-2 text-sm md:col-span-2">
+              <span className="font-medium text-illusion-black">Comment</span>
+              <textarea
+                rows={4}
+                className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none transition-all duration-200 focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
+                value={manualComment}
+                onChange={(event) => setManualComment(event.target.value)}
+                placeholder="Write review feedback..."
+              />
+            </label>
+
+            <div className="md:col-span-2">
+              <Button type="submit" disabled={saving || loading}>
+                {saving ? 'Adding...' : 'Add Review'}
+              </Button>
+            </div>
+          </form>
+        ) : null}
       </Card>
 
       {loading ? (

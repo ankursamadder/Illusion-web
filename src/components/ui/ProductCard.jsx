@@ -58,19 +58,28 @@ const ProductCard = ({ product }) => {
   }
 
   return (
-    <Card className="group flex h-full flex-col gap-3 p-4">
+    <Card className="group flex h-full flex-col gap-3 p-2">
       <div className="relative overflow-hidden rounded-2xl bg-illusion-blush/50">
-        {displayImage ? (
-          <img
-            src={displayImage}
-            alt={name}
-            className="h-48 w-full object-cover transition duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-52 items-center justify-center text-sm text-illusion-black/40">
-            Image Placeholder
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={handleViewDetails}
+          className="block h-48 w-full text-left"
+          aria-label={`View ${name}`}
+        >
+          {displayImage ? (
+            <img
+              src={displayImage}
+              alt={name}
+              loading="lazy"
+              decoding="async"
+              className="h-48 w-full object-cover transition duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-52 items-center justify-center text-sm text-illusion-black/40">
+              Image Placeholder
+            </div>
+          )}
+        </button>
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           {product.featured ? (
             <span className="rounded bg-pink-100 px-2 py-1 text-xs text-pink-600">

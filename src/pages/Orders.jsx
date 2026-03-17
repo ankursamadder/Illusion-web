@@ -49,7 +49,7 @@ const Orders = () => {
                     Order
                   </p>
                   <h3 className="text-lg font-semibold text-illusion-black">
-                    #{order.id.slice(0, 8)}
+                    #{order.orderNumber ?? order.id.slice(0, 8)}
                   </h3>
                   <p className="text-sm text-illusion-black/60">
                     {order.createdAt?.toDate
@@ -58,7 +58,7 @@ const Orders = () => {
                   </p>
                 </div>
                 <Badge variant={order.status === 'Cancelled' ? 'outline' : 'soft'}>
-                  {order.status ?? 'Pending'}
+                  {order.status ?? 'Placed'}
                 </Badge>
               </div>
 
@@ -76,7 +76,7 @@ const Orders = () => {
                     >
                       <div className="h-12 w-12 overflow-hidden rounded-xl bg-illusion-blush/40">
                         {item.image ? (
-                          <img
+                          <img loading="lazy" decoding="async"
                             src={item.image}
                             alt={item.name}
                             className="h-full w-full object-cover"

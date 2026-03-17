@@ -83,7 +83,7 @@ export const getAdminNotifications = async (orders = [], max = 8) => {
   const orderItems = orders.slice(0, max).map((order) => ({
     id: order.id,
     type: 'order',
-    title: `New order #${order.id?.slice(0, 8) ?? ''}`,
+    title: `New order #${order.orderNumber ?? order.id?.slice(0, 8) ?? ''}`,
     detail: order.customerName || order.email || 'Order placed',
     createdAt: order.createdAt ?? null,
     href: `/admin/orders#order-${order.id}`,

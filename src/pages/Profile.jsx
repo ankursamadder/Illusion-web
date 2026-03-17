@@ -147,8 +147,9 @@ const Profile = () => {
   const orderSummary = useMemo(() => {
     return orders.map((order) => ({
       id: order.id,
+      orderNumber: order.orderNumber,
       total: order.total ?? 0,
-      status: order.status ?? 'Pending',
+      status: order.status ?? 'Placed',
       createdAt: order.createdAt,
     }))
   }, [orders])
@@ -374,7 +375,7 @@ const Profile = () => {
                   >
                     <div>
                       <p className="text-sm font-semibold text-illusion-black">
-                        #{order.id.slice(0, 8)}
+                        #{order.orderNumber ?? order.id.slice(0, 8)}
                       </p>
                       <p className="text-xs text-illusion-black/50">
                         {order.createdAt?.toDate

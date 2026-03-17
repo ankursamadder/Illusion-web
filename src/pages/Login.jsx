@@ -124,7 +124,7 @@ const Login = () => {
             onClick={handleGoogle}
             disabled={submitting}
           >
-            <img src={googleLogo} alt="Google" className="h-4 w-4" />
+            <img loading="lazy" decoding="async" src={googleLogo} alt="Google" className="h-4 w-4" />
             Continue with Google
           </Button>
         </Card>

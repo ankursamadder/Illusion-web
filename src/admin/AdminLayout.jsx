@@ -1,11 +1,15 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
+  ChevronDown,
   FileText,
   LayoutDashboard,
+  Mail,
   Megaphone,
   Package,
   PlusCircle,
   ClipboardList,
+  Image as ImageIcon,
   MessageSquare,
   MessageCircle,
   CreditCard,
@@ -15,25 +19,46 @@ import {
 import Container from '../components/Container'
 import AdminNotificationsMenu from './AdminNotificationsMenu'
 
-const sidebarItems = [
+const primaryItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
-  { label: 'Manage Products', icon: Package, href: '/admin/products' },
-  { label: 'Add Product', icon: PlusCircle, href: '/admin/products/new' },
-  { label: 'Manage Orders', icon: ClipboardList, href: '/admin/orders' },
+]
+
+const secondaryItems = [
   { label: 'Enquiries', icon: MessageCircle, href: '/admin/enquiries' },
   { label: 'Manage Reviews', icon: MessageSquare, href: '/admin/reviews' },
   { label: 'Manage Charges', icon: CreditCard, href: '/admin/charges' },
   { label: 'Manage Users', icon: Users, href: '/admin/users' },
   { label: 'Footer Links', icon: FileText, href: '/admin/footer-links' },
   { label: 'Manage Coupons', icon: Ticket, href: '/admin/coupons' },
+  { label: 'Mail Templates', icon: Mail, href: '/admin/mail-templates' },
   { label: 'Promotions', icon: Megaphone, href: '/admin/promotions' },
 ]
 
 const AdminLayout = ({ title, subtitle, children }) => {
+  const location = useLocation()
+  const [ordersOpen, setOrdersOpen] = useState(
+    location.pathname.startsWith('/admin/orders')
+  )
+  const [productsOpen, setProductsOpen] = useState(
+    location.pathname.startsWith('/admin/products')
+  )
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin/orders')) {
+      setOrdersOpen(true)
+    }
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin/products')) {
+      setProductsOpen(true)
+    }
+  }, [location.pathname])
+
   return (
     <section className="bg-illusion-blush/10 py-10">
-      <Container>
-        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <Container className="max-w-[1700px] px-3 sm:px-4 lg:px-5">
+        <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
           <aside className="rounded-3xl border border-illusion-black/10 bg-white p-4 shadow-card lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
             <div className="mb-4 px-3">
               <p className="text-xs uppercase tracking-[0.3em] text-illusion-black/50">
@@ -44,7 +69,125 @@ const AdminLayout = ({ title, subtitle, children }) => {
               </h2>
             </div>
             <nav className="space-y-1">
-              {sidebarItems.map((item) => {
+              {primaryItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <NavLink
+                    key={item.label}
+                    to={item.href}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition ${
+                        isActive
+                          ? 'bg-illusion-blush/70 text-illusion-black'
+                          : 'text-illusion-black/70 hover:bg-illusion-blush/40 hover:text-illusion-black'
+                      }`
+                    }
+                    end={item.href === '/admin'}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </NavLink>
+                )
+              })}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <NavLink
+                    to="/admin/products"
+                    className={({ isActive }) =>
+                      `flex flex-1 items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition ${
+                        isActive
+                          ? 'bg-illusion-blush/70 text-illusion-black'
+                          : 'text-illusion-black/70 hover:bg-illusion-blush/40 hover:text-illusion-black'
+                      }`
+                    }
+                  >
+                    <Package className="h-4 w-4" />
+                    Products
+                  </NavLink>
+                  <button
+                    type="button"
+                    onClick={() => setProductsOpen((prev) => !prev)}
+                    className="rounded-xl p-2 text-illusion-black/50 transition hover:bg-illusion-blush/40 hover:text-illusion-black"
+                    aria-label="Toggle add product"
+                  >
+                    <ChevronDown
+                      className={`h-4 w-4 transition ${productsOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                </div>
+                {productsOpen ? (
+                  <>
+                    <NavLink
+                      to="/admin/products/new"
+                      className={({ isActive }) =>
+                        `ml-7 flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition ${
+                          isActive
+                            ? 'bg-illusion-blush/70 text-illusion-black'
+                            : 'text-illusion-black/60 hover:bg-illusion-blush/40 hover:text-illusion-black'
+                        }`
+                      }
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      Add Product
+                    </NavLink>
+                    <NavLink
+                      to="/admin/products/gallery"
+                      className={({ isActive }) =>
+                        `ml-7 flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition ${
+                          isActive
+                            ? 'bg-illusion-blush/70 text-illusion-black'
+                            : 'text-illusion-black/60 hover:bg-illusion-blush/40 hover:text-illusion-black'
+                        }`
+                      }
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      Product Gallery
+                    </NavLink>
+                  </>
+                ) : null}
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <NavLink
+                    to="/admin/orders"
+                    className={({ isActive }) =>
+                      `flex flex-1 items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition ${
+                        isActive
+                          ? 'bg-illusion-blush/70 text-illusion-black'
+                          : 'text-illusion-black/70 hover:bg-illusion-blush/40 hover:text-illusion-black'
+                      }`
+                    }
+                  >
+                    <ClipboardList className="h-4 w-4" />
+                    Manage Orders
+                  </NavLink>
+                  <button
+                    type="button"
+                    onClick={() => setOrdersOpen((prev) => !prev)}
+                    className="rounded-xl p-2 text-illusion-black/50 transition hover:bg-illusion-blush/40 hover:text-illusion-black"
+                    aria-label="Toggle initiated orders"
+                  >
+                    <ChevronDown
+                      className={`h-4 w-4 transition ${ordersOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                </div>
+                {ordersOpen ? (
+                  <NavLink
+                    to="/admin/orders/initiated"
+                    className={({ isActive }) =>
+                      `ml-7 flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition ${
+                        isActive
+                          ? 'bg-illusion-blush/70 text-illusion-black'
+                          : 'text-illusion-black/60 hover:bg-illusion-blush/40 hover:text-illusion-black'
+                      }`
+                    }
+                  >
+                    Initiated Orders
+                  </NavLink>
+                ) : null}
+              </div>
+              {secondaryItems.map((item) => {
                 const Icon = item.icon
                 return (
                   <NavLink

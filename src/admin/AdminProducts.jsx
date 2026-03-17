@@ -84,7 +84,7 @@ const AdminProducts = () => {
 
   return (
     <AdminLayout
-      title="Manage Products"
+      title="Products"
       subtitle="Create, edit, and manage product visibility."
     >
       <div className="flex items-center justify-between">
@@ -108,7 +108,7 @@ const AdminProducts = () => {
                 <div className="grid gap-4 md:grid-cols-[104px_minmax(0,1fr)_auto] md:items-center">
                   <div className="h-24 w-full overflow-hidden rounded-2xl border border-illusion-black/10 bg-illusion-blush/30 md:w-[104px]">
                     {productImage ? (
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={productImage}
                         alt={product.name}
                         className="h-full w-full object-cover"

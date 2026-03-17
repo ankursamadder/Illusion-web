@@ -47,6 +47,7 @@ const AdminCoupons = () => {
   const [discountType, setDiscountType] = useState('percentage')
   const [discountValue, setDiscountValue] = useState('')
   const [maxDiscountAmount, setMaxDiscountAmount] = useState('')
+  const [showAddCouponForm, setShowAddCouponForm] = useState(false)
 
   const activeProducts = useMemo(
     () => products.filter((item) => item.active !== false),
@@ -142,6 +143,7 @@ const AdminCoupons = () => {
       setDiscountType('percentage')
       setDiscountValue('')
       setMaxDiscountAmount('')
+      setShowAddCouponForm(false)
       await loadData()
     } catch (error) {
       toast.error(error?.message ?? 'Failed to create coupon')
@@ -181,70 +183,83 @@ const AdminCoupons = () => {
       title="Manage Coupons"
       subtitle="Create coupon codes for all products or a single product."
     >
-      <Card>
-        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" onSubmit={handleCreateCoupon}>
-          <Input
-            label="Coupon code"
-            placeholder="e.g. RING10"
-            value={code}
-            onChange={(event) => setCode(event.target.value.toUpperCase())}
-            maxLength={30}
-          />
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-illusion-black">Add Coupon</h3>
+          <Button
+            type="button"
+            variant={showAddCouponForm ? 'secondary' : 'primary'}
+            onClick={() => setShowAddCouponForm((prev) => !prev)}
+          >
+            {showAddCouponForm ? 'Close' : 'Add Coupon'}
+          </Button>
+        </div>
 
-          <label className="flex w-full flex-col gap-2 text-sm">
-            <span className="font-medium text-illusion-black">Apply coupon to</span>
-            <select
-              className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
-              value={productId}
-              onChange={(event) => setProductId(event.target.value)}
-            >
-              <option value="all">All Products</option>
-              {activeProducts.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        {showAddCouponForm ? (
+          <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" onSubmit={handleCreateCoupon}>
+            <Input
+              label="Coupon code"
+              placeholder="e.g. RING10"
+              value={code}
+              onChange={(event) => setCode(event.target.value.toUpperCase())}
+              maxLength={30}
+            />
 
-          <label className="flex w-full flex-col gap-2 text-sm">
-            <span className="font-medium text-illusion-black">Discount type</span>
-            <select
-              className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
-              value={discountType}
-              onChange={(event) => setDiscountType(event.target.value)}
-            >
-              <option value="percentage">Percentage</option>
-              <option value="fixed">Fixed</option>
-            </select>
-          </label>
+            <label className="flex w-full flex-col gap-2 text-sm">
+              <span className="font-medium text-illusion-black">Apply coupon to</span>
+              <select
+                className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
+                value={productId}
+                onChange={(event) => setProductId(event.target.value)}
+              >
+                <option value="all">All Products</option>
+                {activeProducts.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <Input
-            label={discountType === 'percentage' ? 'Discount (%)' : 'Discount (fixed)'}
-            type="number"
-            min="0"
-            step="0.01"
-            value={discountValue}
-            onChange={(event) => setDiscountValue(event.target.value)}
-            placeholder={discountType === 'percentage' ? 'e.g. 10' : 'e.g. 199'}
-          />
+            <label className="flex w-full flex-col gap-2 text-sm">
+              <span className="font-medium text-illusion-black">Discount type</span>
+              <select
+                className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
+                value={discountType}
+                onChange={(event) => setDiscountType(event.target.value)}
+              >
+                <option value="percentage">Percentage</option>
+                <option value="fixed">Fixed</option>
+              </select>
+            </label>
 
-          <Input
-            label="Max Amount"
-            type="number"
-            min="0"
-            step="0.01"
-            value={maxDiscountAmount}
-            onChange={(event) => setMaxDiscountAmount(event.target.value)}
-            placeholder="e.g. 500"
-          />
+            <Input
+              label={discountType === 'percentage' ? 'Discount (%)' : 'Discount (fixed)'}
+              type="number"
+              min="0"
+              step="0.01"
+              value={discountValue}
+              onChange={(event) => setDiscountValue(event.target.value)}
+              placeholder={discountType === 'percentage' ? 'e.g. 10' : 'e.g. 199'}
+            />
 
-          <div className="flex items-end">
-            <Button type="submit" disabled={saving || loading} className="w-full md:w-auto">
-              {saving ? 'Adding...' : 'Add Coupon'}
-            </Button>
-          </div>
-        </form>
+            <Input
+              label="Max Amount"
+              type="number"
+              min="0"
+              step="0.01"
+              value={maxDiscountAmount}
+              onChange={(event) => setMaxDiscountAmount(event.target.value)}
+              placeholder="e.g. 500"
+            />
+
+            <div className="flex items-end">
+              <Button type="submit" disabled={saving || loading} className="w-full md:w-auto">
+                {saving ? 'Adding...' : 'Add Coupon'}
+              </Button>
+            </div>
+          </form>
+        ) : null}
       </Card>
 
       {loading ? (

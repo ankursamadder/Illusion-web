@@ -79,4 +79,8 @@ const verifyRazorpayPayment = async (payload) => {
   return response.json()
 }
 
-export { loadRazorpay, createRazorpayOrder, verifyRazorpayPayment }
+export {
+  loadRazorpay,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+}

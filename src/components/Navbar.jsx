@@ -157,6 +157,8 @@ const Navbar = () => {
               <img
                 src={illusionLogo}
                 alt="Illusion"
+                fetchPriority="high"
+                decoding="async"
                 className="h-9 w-auto object-contain"
               />
             </NavLink>
@@ -284,7 +286,7 @@ const Navbar = () => {
               >
                 <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-illusion-blush/60">
                   {currentUser?.photoURL ? (
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={currentUser.photoURL}
                       alt={currentUser.name ?? 'Profile'}
                       className="h-full w-full object-cover"

@@ -9,6 +9,7 @@ const collections = {
   users: 'users',
   products: 'products',
   orders: 'orders',
+  orderCounters: 'orderCounters',
   reviews: 'reviews',
   coupons: 'coupons',
   charges: 'charges',
@@ -17,6 +18,11 @@ const collections = {
   footerPages: 'footerPages',
   contactEnquiries: 'contactEnquiries',
   careerEnquiries: 'careerEnquiries',
+  categories: 'categories',
+  productImageLibrary: 'productImageLibrary',
+  mailTemplates: 'mailTemplates',
+  notificationSettings: 'notificationSettings',
+  mail: 'mail',
 }
 
 export { app, auth, db, storage, analytics, collections }
