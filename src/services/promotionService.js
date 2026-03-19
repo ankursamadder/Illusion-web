@@ -17,6 +17,7 @@ import { optimizeImageFile } from '../utils/imageOptimization'
 const ribbonRef = doc(db, collections.promotions, 'ribbon')
 const homeNavbarBannerRef = doc(db, collections.promotions, 'homeNavbarBanner')
 const bannerLibraryRef = doc(db, collections.promotions, 'bannerLibrary')
+const bestSellerVideosRef = doc(db, collections.promotions, 'bestSellerVideos')
 
 const normalizeBannerImages = (value) => {
   if (Array.isArray(value?.images)) {
@@ -55,18 +56,53 @@ const normalizeHomeNavbarBannerPromotion = (value) => {
   if (!value) return null
 
   const images = normalizeBannerImages(value)
+  const mobileImages = Array.isArray(value?.mobileImages)
+    ? value.mobileImages
+        .filter((item) => item?.imageUrl)
+        .map((item) => ({
+          imageUrl: item.imageUrl,
+          imagePath: item.imagePath ?? '',
+        }))
+    : value?.mobileImageUrl
+      ? [
+          {
+            imageUrl: value.mobileImageUrl,
+            imagePath: value.mobileImagePath ?? '',
+          },
+        ]
+      : []
 
   return {
     ...value,
     images,
     imageUrl: images[0]?.imageUrl ?? '',
     imagePath: images[0]?.imagePath ?? '',
+    mobileImages,
+    mobileImageUrl: mobileImages[0]?.imageUrl ?? '',
+    mobileImagePath: mobileImages[0]?.imagePath ?? '',
   }
 }
 
 const normalizeBannerLibrary = (value) => {
   if (!value) return []
   return dedupeBannerImages(normalizeBannerImages(value))
+}
+
+const normalizeBestSellerVideos = (value) => {
+  if (!Array.isArray(value?.videos)) return []
+
+  return value.videos
+    .filter((item) => item?.id && item?.videoUrl)
+    .map((item) => ({
+      id: item.id,
+      videoUrl: item.videoUrl,
+      videoPath: item.videoPath ?? '',
+      productId: item.productId ?? '',
+      productName: item.productName ?? '',
+      active: item.active !== false,
+      createdAt: item.createdAt ?? Date.now(),
+    }))
+    .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
 }
 
 export const getRibbonPromotion = async () => {
@@ -124,16 +160,47 @@ export const subscribeHomeNavbarBannerPromotion = (callback) => {
 }
 
 export const saveHomeNavbarBannerPromotion = async (payload) => {
-  const images = dedupeBannerImages(normalizeBannerImages(payload))
+  const hasDesktopPayload =
+    Object.prototype.hasOwnProperty.call(payload, 'images') ||
+    Object.prototype.hasOwnProperty.call(payload, 'imageUrl') ||
+    Object.prototype.hasOwnProperty.call(payload, 'imagePath')
+  const hasMobilePayload =
+    Object.prototype.hasOwnProperty.call(payload, 'mobileImages') ||
+    Object.prototype.hasOwnProperty.call(payload, 'mobileImageUrl') ||
+    Object.prototype.hasOwnProperty.call(payload, 'mobileImagePath')
+
+  const desktopImages = hasDesktopPayload
+    ? dedupeBannerImages(normalizeBannerImages(payload))
+    : null
+  const mobileImages = hasMobilePayload
+    ? dedupeBannerImages(
+        normalizeBannerImages({
+          images: payload.mobileImages,
+          imageUrl: payload.mobileImageUrl,
+          imagePath: payload.mobileImagePath,
+        })
+      )
+    : null
+
+  const updatePayload = {
+    updatedAt: serverTimestamp(),
+  }
+
+  if (desktopImages) {
+    updatePayload.images = desktopImages
+    updatePayload.imageUrl = desktopImages[0]?.imageUrl ?? ''
+    updatePayload.imagePath = desktopImages[0]?.imagePath ?? ''
+  }
+
+  if (mobileImages) {
+    updatePayload.mobileImages = mobileImages
+    updatePayload.mobileImageUrl = mobileImages[0]?.imageUrl ?? ''
+    updatePayload.mobileImagePath = mobileImages[0]?.imagePath ?? ''
+  }
 
   await setDoc(
     homeNavbarBannerRef,
-    {
-      images,
-      imageUrl: images[0]?.imageUrl ?? '',
-      imagePath: images[0]?.imagePath ?? '',
-      updatedAt: serverTimestamp(),
-    },
+    updatePayload,
     { merge: true }
   )
 }
@@ -148,6 +215,29 @@ export const uploadHomeNavbarBanner = async (file) => {
     .toString(36)
     .slice(2, 8)}.webp`
   const bannerRef = ref(storage, `promotions/popup/${safeName}`)
+
+  await uploadBytes(bannerRef, optimizedFile, {
+    contentType: optimizedFile.type,
+    cacheControl: 'public,max-age=31536000,immutable',
+  })
+  const imageUrl = await getDownloadURL(bannerRef)
+
+  return {
+    imageUrl,
+    imagePath: bannerRef.fullPath,
+  }
+}
+
+export const uploadMobileHomeNavbarBanner = async (file) => {
+  const optimizedFile = await optimizeImageFile(file, {
+    maxWidth: 1080,
+    maxHeight: 1350,
+    quality: 0.78,
+  })
+  const safeName = `home-navbar-banner-mobile-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}.webp`
+  const bannerRef = ref(storage, `promotions/popup/mobile/${safeName}`)
 
   await uploadBytes(bannerRef, optimizedFile, {
     contentType: optimizedFile.type,
@@ -201,6 +291,83 @@ export const removeBannerLibraryImage = async (targetImage) => {
   return nextImages
 }
 
+export const getBestSellerVideos = async () => {
+  const snapshot = await getDoc(bestSellerVideosRef)
+  if (!snapshot.exists()) return []
+  return normalizeBestSellerVideos(snapshot.data())
+}
+
+export const saveBestSellerVideos = async (videos = []) => {
+  await setDoc(
+    bestSellerVideosRef,
+    {
+      videos,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  )
+}
+
+export const addBestSellerVideo = async (payload) => {
+  const existing = await getBestSellerVideos()
+  const nextVideos = [
+    {
+      id: payload.id ?? `best_seller_${Date.now()}`,
+      videoUrl: payload.videoUrl ?? '',
+      videoPath: payload.videoPath ?? '',
+      productId: payload.productId ?? '',
+      productName: payload.productName ?? '',
+      active: payload.active !== false,
+      createdAt: payload.createdAt ?? Date.now(),
+    },
+    ...existing,
+  ]
+  await saveBestSellerVideos(nextVideos)
+  return nextVideos
+}
+
+export const updateBestSellerVideo = async (id, payload) => {
+  const existing = await getBestSellerVideos()
+  const nextVideos = existing.map((item) =>
+    item.id === id ? { ...item, ...payload } : item
+  )
+  await saveBestSellerVideos(nextVideos)
+  return nextVideos
+}
+
+export const uploadBestSellerVideo = async (file) => {
+  const extension = file?.name?.includes('.')
+    ? file.name.split('.').pop().toLowerCase()
+    : 'mp4'
+  const safeExtension = extension || 'mp4'
+  const safeName = `best-seller-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}.${safeExtension}`
+  const videoRef = ref(storage, `promotions/best-seller/${safeName}`)
+
+  await uploadBytes(videoRef, file, {
+    contentType: file.type || 'video/mp4',
+    cacheControl: 'public,max-age=31536000,immutable',
+  })
+  const videoUrl = await getDownloadURL(videoRef)
+
+  return {
+    videoUrl,
+    videoPath: videoRef.fullPath,
+  }
+}
+
+export const deleteBestSellerVideo = async (id) => {
+  const existing = await getBestSellerVideos()
+  const targetVideo = existing.find((item) => item.id === id)
+  if (targetVideo?.videoPath) {
+    await deletePromotionAsset(targetVideo.videoPath)
+  }
+  const nextVideos = existing.filter((item) => item.id !== id)
+  await saveBestSellerVideos(nextVideos)
+  return nextVideos
+}
+
 export const deletePromotionAsset = async (path) => {
   if (!path) return
 
@@ -219,10 +386,17 @@ const promotionService = {
   subscribeHomeNavbarBannerPromotion,
   saveHomeNavbarBannerPromotion,
   uploadHomeNavbarBanner,
+  uploadMobileHomeNavbarBanner,
   getBannerLibrary,
   saveBannerLibrary,
   addBannerLibraryImages,
   removeBannerLibraryImage,
+  getBestSellerVideos,
+  saveBestSellerVideos,
+  addBestSellerVideo,
+  updateBestSellerVideo,
+  uploadBestSellerVideo,
+  deleteBestSellerVideo,
   deletePromotionAsset,
 }
 

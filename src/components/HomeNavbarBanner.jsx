@@ -2,10 +2,20 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { subscribeHomeNavbarBannerPromotion } from '../services/promotionService'
 
+const MOBILE_BREAKPOINT = 768
+
+const extractImageUrls = (items = []) =>
+  items
+    .map((item) => item?.imageUrl?.trim())
+    .filter((imageUrl) => Boolean(imageUrl))
+
 const HomeNavbarBanner = () => {
   const location = useLocation()
   const [banner, setBanner] = useState(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT
+  )
 
   useEffect(() => {
     const unsubscribe = subscribeHomeNavbarBannerPromotion((value) => {
@@ -15,11 +25,21 @@ const HomeNavbarBanner = () => {
     return () => unsubscribe()
   }, [])
 
-  const images = useMemo(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const desktopImages = useMemo(() => {
     if (Array.isArray(banner?.images) && banner.images.length) {
-      return banner.images
-        .map((item) => item?.imageUrl)
-        .filter((imageUrl) => Boolean(imageUrl))
+      return extractImageUrls(banner.images)
     }
 
     if (banner?.imageUrl?.trim()) {
@@ -29,9 +49,26 @@ const HomeNavbarBanner = () => {
     return []
   }, [banner])
 
+  const mobileImages = useMemo(() => {
+    if (Array.isArray(banner?.mobileImages) && banner.mobileImages.length) {
+      return extractImageUrls(banner.mobileImages)
+    }
+
+    if (banner?.mobileImageUrl?.trim()) {
+      return [banner.mobileImageUrl.trim()]
+    }
+
+    return []
+  }, [banner])
+
+  const images = useMemo(
+    () => (isMobile && mobileImages.length ? mobileImages : desktopImages),
+    [desktopImages, isMobile, mobileImages]
+  )
+
   useEffect(() => {
     setActiveIndex(0)
-  }, [images.length])
+  }, [images])
 
   useEffect(() => {
     if (images.length <= 1) return undefined

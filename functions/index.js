@@ -5,7 +5,7 @@ const Razorpay = require('razorpay')
 const nodemailer = require('nodemailer')
 const admin = require('firebase-admin')
 const { onRequest } = require('firebase-functions/v2/https')
-const { onDocumentCreated } = require('firebase-functions/v2/firestore')
+const { onDocumentWritten } = require('firebase-functions/v2/firestore')
 const { defineSecret } = require('firebase-functions/params')
 
 const RAZORPAY_KEY_ID = defineSecret('RAZORPAY_KEY_ID')
@@ -66,6 +66,22 @@ const sanitizeEmails = (value) => {
   return list
     .map((item) => String(item || '').trim().toLowerCase())
     .filter((item) => item && !seen.has(item) && seen.add(item))
+}
+
+const normalizeText = (value) => String(value || '').trim().toLowerCase()
+
+const isOrderEmailEligible = (order = {}) => {
+  const paymentMethod = normalizeText(order.paymentMethod)
+  const paymentStatus = normalizeText(order.paymentStatus)
+  const orderStatus = normalizeText(order.status)
+
+  if (paymentMethod === 'cod') return true
+
+  return (
+    paymentStatus === 'success' ||
+    paymentStatus === 'paid' ||
+    orderStatus === 'paid'
+  )
 }
 
 const escapeHtml = (value) =>
@@ -311,38 +327,67 @@ const sendCustomerEmail = async (order, orderId, config) => {
   })
 }
 
-exports.onOrderCreated = onDocumentCreated(
+exports.onOrderCreated = onDocumentWritten(
   {
     region: 'asia-south1',
     document: 'orders/{orderId}',
     secrets: [EMAIL_USER, EMAIL_PASS, ADMIN_EMAIL],
   },
   async (event) => {
-    const snapshot = event.data
-    if (!snapshot) return
+    const afterSnapshot = event.data?.after
+    if (!afterSnapshot?.exists) return
 
-    const order = snapshot.data() || {}
+    const beforeSnapshot = event.data?.before
+    const previousOrder = beforeSnapshot?.exists ? beforeSnapshot.data() || {} : {}
+    const order = afterSnapshot.data() || {}
     const orderId = event.params.orderId
+
+    const eligibleBefore = isOrderEmailEligible(previousOrder)
+    const eligibleAfter = isOrderEmailEligible(order)
+    if (!eligibleAfter) return
+
+    const shouldRetryMissing =
+      (!order.adminNotificationSentAt && normalizeText(order.paymentMethod) === 'cod') ||
+      !order.adminNotificationSentAt ||
+      !order.customerNotificationSentAt
+
+    if (eligibleBefore && !shouldRetryMissing) return
+
     const updates = {}
 
     try {
       const config = await getEmailSettingsAndTemplates()
+      const shouldSendAdmin =
+        config.settings.adminEnabled && !order.adminNotificationSentAt
+      const shouldSendCustomer =
+        config.settings.customerEnabled && !order.customerNotificationSentAt
+
+      if (!shouldSendAdmin && !shouldSendCustomer) return
+
       const [adminResult, customerResult] = await Promise.allSettled([
-        sendAdminEmail(order, orderId, config),
-        sendCustomerEmail(order, orderId, config),
+        shouldSendAdmin
+          ? sendAdminEmail(order, orderId, config)
+          : Promise.resolve(false),
+        shouldSendCustomer
+          ? sendCustomerEmail(order, orderId, config)
+          : Promise.resolve(false),
       ])
 
-      if (adminResult.status === 'fulfilled' && adminResult.value) {
+      if (shouldSendAdmin && adminResult.status === 'fulfilled' && adminResult.value) {
         updates.adminNotificationSentAt = serverTimestamp()
       }
-      if (customerResult.status === 'fulfilled' && customerResult.value) {
+      if (
+        shouldSendCustomer &&
+        customerResult.status === 'fulfilled' &&
+        customerResult.value
+      ) {
         updates.customerNotificationSentAt = serverTimestamp()
       }
 
-      if (adminResult.status === 'rejected') {
+      if (shouldSendAdmin && adminResult.status === 'rejected') {
         console.error('Admin order email failed', adminResult.reason)
       }
-      if (customerResult.status === 'rejected') {
+      if (shouldSendCustomer && customerResult.status === 'rejected') {
         console.error('Customer order email failed', customerResult.reason)
       }
     } catch (error) {
@@ -350,7 +395,7 @@ exports.onOrderCreated = onDocumentCreated(
     }
 
     if (Object.keys(updates).length) {
-      await snapshot.ref.set(
+      await afterSnapshot.ref.set(
         {
           ...updates,
           updatedAt: serverTimestamp(),

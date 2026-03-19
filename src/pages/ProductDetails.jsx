@@ -107,8 +107,12 @@ const ProductDetails = () => {
     )
   }
 
-  const offerPrice = product.offerPrice
-  const showOffer = typeof offerPrice === 'number' && offerPrice < product.price
+  const safePrice = Number(product.price ?? 0)
+  const safeStrikePrice = Number(product.strikePrice ?? 0)
+  const hasStrikePrice = safeStrikePrice > safePrice
+  const percentOff = hasStrikePrice
+    ? Math.round(((safeStrikePrice - safePrice) / safeStrikePrice) * 100)
+    : 0
   const isWishlisted = wishlistItems.some((item) => item.id === product.id)
 
   const toggleWishlist = () => {
@@ -154,9 +158,9 @@ const ProductDetails = () => {
 
   return (
     <PageShell title={product.name} subtitle={product.category ?? ''}>
-      <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr]">
+      <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-[120px_1fr]">
             <div className="flex gap-3 sm:flex-col">
               {images.length ? (
                 images.map((img) => (
@@ -164,7 +168,7 @@ const ProductDetails = () => {
                     key={img}
                     type="button"
                     onClick={() => setSelectedImage(img)}
-                    className={`h-20 w-20 overflow-hidden rounded-2xl border bg-illusion-blush/40 transition ${
+                    className={`h-16 w-16 overflow-hidden rounded-xl border bg-illusion-blush/40 transition sm:h-20 sm:w-20 sm:rounded-2xl ${
                       selectedImage === img
                         ? 'border-illusion-pink/60 ring-2 ring-illusion-pink/30'
                         : 'border-illusion-black/10'
@@ -174,7 +178,7 @@ const ProductDetails = () => {
                   </button>
                 ))
               ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-dashed border-illusion-black/20 text-xs text-illusion-black/40">
+                <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-illusion-black/20 text-xs text-illusion-black/40 sm:h-20 sm:w-20 sm:rounded-2xl">
                   No image
                 </div>
               )}
@@ -196,9 +200,9 @@ const ProductDetails = () => {
         </div>
 
         <div className="space-y-6">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-3xl font-semibold text-illusion-black">
+              <h1 className="text-2xl font-semibold text-illusion-black sm:text-3xl">
                 {product.name}
               </h1>
               <div
@@ -206,7 +210,7 @@ const ProductDetails = () => {
                 dangerouslySetInnerHTML={{ __html: descriptionHtml }}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex shrink-0 gap-2">
               <IconButton
                 icon={Heart}
                 label="Add to wishlist"
@@ -222,13 +226,18 @@ const ProductDetails = () => {
               <p className="text-xs uppercase tracking-[0.2em] text-illusion-black/50">
                 Price
               </p>
-              <div className="mt-2 flex items-center gap-3">
+              <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="text-2xl font-semibold text-illusion-black">
-                  {formatCurrency(showOffer ? offerPrice : product.price)}
+                  {formatCurrency(safePrice)}
                 </span>
-                {showOffer ? (
+                {hasStrikePrice ? (
                   <span className="text-sm text-illusion-black/50 line-through">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(safeStrikePrice)}
+                  </span>
+                ) : null}
+                {hasStrikePrice ? (
+                  <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                    {percentOff}% off
                   </span>
                 ) : null}
               </div>
@@ -252,7 +261,7 @@ const ProductDetails = () => {
       </div>
 
       <div className="mt-12">
-        <div className="mb-6 flex items-end justify-between">
+        <div className="mb-6 flex items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl font-semibold text-illusion-black">
               Similar Products
@@ -263,7 +272,7 @@ const ProductDetails = () => {
           </div>
         </div>
         {similar.length ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             {similar.map((item) => (
               <ProductCard key={item.id} product={item} />
             ))}

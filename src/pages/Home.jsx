@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Star } from 'lucide-react'
@@ -12,6 +12,7 @@ import {
   getNewArrivalProducts,
 } from '../services/productService'
 import { getApprovedReviews } from '../services/reviewService'
+import { getBestSellerVideos } from '../services/promotionService'
 
 const chunkItems = (items, size) => {
   const chunks = []
@@ -35,12 +36,12 @@ const ProductSection = ({
   return (
     <section className="py-12">
       <Container>
-        <div className="mb-8 flex items-end justify-between gap-6">
+        <div className="mb-6 flex flex-col items-start gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div>
             <h2 className="text-2xl font-semibold text-illusion-black">{title}</h2>
             <p className="text-sm text-illusion-black/60">{subtitle}</p>
           </div>
-          <Button variant="ghost" onClick={onViewAll}>
+          <Button size="sm" variant="ghost" onClick={onViewAll}>
             View all
           </Button>
         </div>
@@ -48,7 +49,7 @@ const ProductSection = ({
         {loading ? (
           <Card className="text-sm text-illusion-black/60">Loading products...</Card>
         ) : products.length ? (
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -88,6 +89,119 @@ const ReviewCard = ({ review }) => {
         <p className="text-sm text-illusion-black/70">"{review.comment}"</p>
       </div>
     </Card>
+  )
+}
+
+const BestSellerSection = ({ videos, loading, onBuyNow, sectionRef }) => {
+  const videoRefs = useRef([])
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0)
+
+  useEffect(() => {
+    setActiveVideoIndex(0)
+    videoRefs.current = []
+  }, [videos.length])
+
+  useEffect(() => {
+    if (!videos.length) return undefined
+
+    const attemptPlay = () => {
+      const firstVideo = videoRefs.current[0]
+      if (!firstVideo) return
+      firstVideo.muted = true
+      firstVideo.playsInline = true
+      const playPromise = firstVideo.play()
+      if (typeof playPromise?.catch === 'function') {
+        playPromise.catch(() => {})
+      }
+    }
+
+    const raf = window.requestAnimationFrame(attemptPlay)
+    const timeout = window.setTimeout(attemptPlay, 450)
+
+    return () => {
+      window.cancelAnimationFrame(raf)
+      window.clearTimeout(timeout)
+    }
+  }, [videos.length])
+
+  useEffect(() => {
+    if (!videos.length) return
+
+    const targetVideo = videoRefs.current[activeVideoIndex]
+    if (!targetVideo) return
+
+    videoRefs.current.forEach((video, index) => {
+      if (!video || index === activeVideoIndex) return
+      video.pause()
+      video.currentTime = 0
+    })
+
+    targetVideo.muted = true
+    const playPromise = targetVideo.play()
+    if (typeof playPromise?.catch === 'function') {
+      playPromise.catch(() => {})
+    }
+  }, [activeVideoIndex, videos])
+
+  const handleVideoEnded = (index) => {
+    if (!videos.length) return
+    setActiveVideoIndex((index + 1) % videos.length)
+  }
+
+  return (
+    <section ref={sectionRef} id="best-seller" className="py-12">
+      <Container>
+        <div className="mb-8 flex items-end justify-between gap-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-illusion-black">Best Seller</h2>
+            <p className="text-sm text-illusion-black/60">
+              Top video picks curated by our promotions team.
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <Card className="text-sm text-illusion-black/60">Loading best seller videos...</Card>
+        ) : videos.length ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            {videos.map((video, index) => (
+              <Card key={video.id} className="space-y-3 p-3">
+                <video
+                  ref={(element) => {
+                    videoRefs.current = videoRefs.current.slice(0, videos.length)
+                    videoRefs.current[index] = element
+                  }}
+                  src={video.videoUrl}
+                  controls
+                  autoPlay={index === activeVideoIndex}
+                  muted
+                  playsInline
+                  preload="auto"
+                  onPlay={() => setActiveVideoIndex(index)}
+                  onEnded={() => handleVideoEnded(index)}
+                  className="aspect-[9/16] w-full rounded-2xl bg-black object-cover"
+                />
+                <p className="truncate text-sm font-medium text-illusion-black">
+                  {video.productName || 'Best Seller Product'}
+                </p>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onBuyNow(video)}
+                  disabled={!video.productId}
+                >
+                  Buy now
+                </Button>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="text-sm text-illusion-black/60">
+            No best seller videos added yet.
+          </Card>
+        )}
+      </Container>
+    </section>
   )
 }
 
@@ -172,12 +286,15 @@ const ReviewsSection = ({ reviews, loading }) => {
 
 const Home = () => {
   const navigate = useNavigate()
+  const bestSellerSectionRef = useRef(null)
   const [productsLoading, setProductsLoading] = useState(true)
   const [reviewsLoading, setReviewsLoading] = useState(true)
+  const [bestSellerLoading, setBestSellerLoading] = useState(true)
   const [featuredProducts, setFeaturedProducts] = useState([])
   const [mostLovedProducts, setMostLovedProducts] = useState([])
   const [newArrivals, setNewArrivals] = useState([])
   const [approvedReviews, setApprovedReviews] = useState([])
+  const [bestSellerVideos, setBestSellerVideos] = useState([])
 
   useEffect(() => {
     let mounted = true
@@ -215,13 +332,36 @@ const Home = () => {
       }
     }
 
+    const loadBestSellerVideos = async () => {
+      setBestSellerLoading(true)
+      try {
+        const videos = await getBestSellerVideos()
+        if (!mounted) return
+        setBestSellerVideos(videos.filter((item) => item.active !== false).slice(0, 3))
+      } catch (error) {
+        toast.error(error?.message ?? 'Failed to load best seller videos')
+      } finally {
+        if (mounted) setBestSellerLoading(false)
+      }
+    }
+
     loadProducts()
     loadReviews()
+    loadBestSellerVideos()
 
     return () => {
       mounted = false
     }
   }, [])
+
+  const handleScrollToBestSeller = () => {
+    bestSellerSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const handleBestSellerBuyNow = (video) => {
+    if (!video?.productId) return
+    navigate(`/product/${video.productId}`)
+  }
 
   return (
     <div>
@@ -240,8 +380,8 @@ const Home = () => {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button onClick={() => navigate('/shop')}>Shop New Arrivals</Button>
-              <Button variant="secondary" onClick={() => navigate('/shop')}>
-                Book a Visit
+              <Button variant="secondary" onClick={handleScrollToBestSeller}>
+                Best Seller
               </Button>
             </div>
           </div>
@@ -268,6 +408,13 @@ const Home = () => {
         products={featuredProducts}
         loading={productsLoading}
         onViewAll={() => navigate('/shop')}
+      />
+
+      <BestSellerSection
+        sectionRef={bestSellerSectionRef}
+        videos={bestSellerVideos}
+        loading={bestSellerLoading}
+        onBuyNow={handleBestSellerBuyNow}
       />
 
       <ProductSection
