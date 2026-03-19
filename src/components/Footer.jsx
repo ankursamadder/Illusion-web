@@ -31,7 +31,7 @@ const Footer = () => {
             For any complaint or query, reach us directly on WhatsApp.
           </p>
           <a
-            href="https://wa.me/8588066508"
+            href="https://wa.me/+918588066508"
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex w-full items-center justify-between gap-3 rounded-2xl bg-[#25D366] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_-14px_rgba(37,211,102,0.95)] transition hover:-translate-y-0.5 hover:bg-[#1fbf5c] hover:shadow-[0_16px_30px_-14px_rgba(37,211,102,1)]"

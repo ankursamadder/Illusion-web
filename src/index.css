@@ -7,6 +7,8 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -31,6 +33,13 @@
   box-sizing: border-box;
 }
 
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -39,6 +48,40 @@ a {
 img {
   display: block;
   max-width: 100%;
+}
+
+.product-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.625rem;
+}
+
+.product-grid > * {
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .product-grid {
+    gap: 1rem;
+  }
+
+  .product-grid--shop {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-grid--similar {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .product-grid--shop,
+  .product-grid--home {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .illusion-marquee {

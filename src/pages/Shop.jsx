@@ -101,7 +101,7 @@ const Shop = () => {
       {loading ? (
         <Card className="text-sm text-illusion-black/60">Loading products...</Card>
       ) : filteredProducts.length ? (
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4">
+        <div className="product-grid product-grid--shop">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

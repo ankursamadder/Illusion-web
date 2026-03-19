@@ -64,12 +64,12 @@ const ProductCard = ({ product }) => {
   }
 
   return (
-    <Card className="group flex h-full flex-col gap-2 p-1.5 sm:gap-2.5 sm:p-2.5">
+    <Card className="group flex h-full w-full min-w-0 flex-col overflow-hidden !gap-2 !p-1.5 sm:!gap-2.5 sm:!p-2.5">
       <div className="relative overflow-hidden rounded-2xl bg-illusion-blush/50">
         <button
           type="button"
           onClick={handleViewDetails}
-          className="block aspect-[3/4] w-full text-left"
+          className="block h-44 w-full text-left sm:h-56 lg:h-64"
           aria-label={`View ${name}`}
         >
           {displayImage ? (
@@ -115,10 +115,10 @@ const ProductCard = ({ product }) => {
           />
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-2 sm:gap-2.5">
-        <div>
-          <button type="button" onClick={handleViewDetails} className="text-left">
-            <h3 className="min-h-[3.1rem] overflow-hidden text-[1.08rem] font-semibold leading-tight text-illusion-black hover:underline sm:min-h-[3.8rem] sm:text-[1.05rem]">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-2.5">
+        <div className="min-w-0">
+          <button type="button" onClick={handleViewDetails} className="min-w-0 text-left">
+            <h3 className="min-h-[2.8rem] overflow-hidden break-words text-base font-semibold leading-tight text-illusion-black hover:underline sm:min-h-[3.6rem] sm:text-[1.05rem]">
               {name}
             </h3>
           </button>
