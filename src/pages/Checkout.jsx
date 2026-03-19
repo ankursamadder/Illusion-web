@@ -6,6 +6,7 @@ import PageShell from './PageShell'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import BlurImage from '../components/ui/BlurImage'
 import CouponPanel from '../components/CouponPanel'
 import useCartStore from '../hooks/useCartStore'
 import useAppliedCoupon from '../hooks/useAppliedCoupon'
@@ -18,6 +19,7 @@ import { createOrder, updateOrder } from '../services/orderService'
 import {
   createRazorpayOrder,
   loadRazorpay,
+  prewarmPaymentsApi,
   verifyRazorpayPayment,
 } from '../services/razorpayService'
 
@@ -102,6 +104,12 @@ const Checkout = () => {
     }
   }, [user])
 
+  useEffect(() => {
+    // Warm SDK + backend so payment sheet opens faster on click.
+    loadRazorpay().catch(() => {})
+    prewarmPaymentsApi().catch(() => {})
+  }, [])
+
   const totals = useMemo(() => {
     return calculateOrderTotals({
       items,
@@ -157,6 +165,7 @@ const Checkout = () => {
     setSubmitting(true)
 
     const address = addresses.find((item) => item.id === selectedAddress) ?? null
+    const sdkPromise = paymentMethod === 'online' ? loadRazorpay() : Promise.resolve(true)
 
     try {
       const createdOrder = await createOrder({
@@ -201,22 +210,24 @@ const Checkout = () => {
         return
       }
 
-      const razorpayLoaded = await loadRazorpay()
+      const amount = Number(total.toFixed(2))
+      const [razorpayLoaded, razorpayOrder] = await Promise.all([
+        sdkPromise,
+        createRazorpayOrder({
+          amount,
+          currency: 'INR',
+          receipt: orderId,
+          notes: { orderId },
+        }),
+      ])
+
       if (!razorpayLoaded) {
         throw new Error('Razorpay SDK failed to load')
       }
 
-      const amount = Number(total.toFixed(2))
-      const razorpayOrder = await createRazorpayOrder({
-        amount,
-        currency: 'INR',
-        receipt: orderId,
-        notes: { orderId },
-      })
-
-      await updateOrder(orderId, {
+      updateOrder(orderId, {
         razorpayOrderId: razorpayOrder.orderId,
-      })
+      }).catch(() => {})
 
       const razorpayKeyId = razorpayOrder.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID
       if (!razorpayKeyId) {
@@ -427,7 +438,14 @@ const Checkout = () => {
                 >
                   <div className="h-14 w-14 overflow-hidden rounded-xl bg-illusion-blush/40">
                     {item.image ? (
-                      <img loading="lazy" decoding="async" src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                      <BlurImage
+                        src={item.image}
+                        alt={item.name}
+                        loading="lazy"
+                        decoding="async"
+                        wrapperClassName="h-full w-full"
+                        className="h-full w-full object-cover"
+                      />
                     ) : null}
                   </div>
                   <div className="flex-1">

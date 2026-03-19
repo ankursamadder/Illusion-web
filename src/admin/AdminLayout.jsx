@@ -56,7 +56,7 @@ const AdminLayout = ({ title, subtitle, children }) => {
   }, [location.pathname])
 
   return (
-    <section className="bg-illusion-blush/10 py-10">
+    <section className="admin-no-reveal bg-illusion-blush/10 py-10">
       <Container className="max-w-[1700px] px-3 sm:px-4 lg:px-5">
         <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
           <aside className="rounded-3xl border border-illusion-black/10 bg-white p-4 shadow-card lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">

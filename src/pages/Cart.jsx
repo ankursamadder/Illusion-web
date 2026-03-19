@@ -7,6 +7,7 @@ import CouponPanel from '../components/CouponPanel'
 import useCartStore from '../hooks/useCartStore'
 import useAppliedCoupon from '../hooks/useAppliedCoupon'
 import useCheckoutCharges from '../hooks/useCheckoutCharges'
+import BlurImage from '../components/ui/BlurImage'
 import { formatCurrency } from '../utils/formatCurrency'
 import {
   calculateOrderTotals,
@@ -48,9 +49,12 @@ const Cart = () => {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                   <div className="h-16 w-16 overflow-hidden rounded-xl bg-illusion-blush/40">
                     {item.image ? (
-                      <img loading="lazy" decoding="async"
+                      <BlurImage
                         src={item.image}
                         alt={item.name}
+                        loading="lazy"
+                        decoding="async"
+                        wrapperClassName="h-full w-full"
                         className="h-full w-full object-cover"
                       />
                     ) : null}

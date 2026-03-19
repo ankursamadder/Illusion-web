@@ -32,9 +32,11 @@ import AdminCoupons from './admin/AdminCoupons'
 import AdminMailTemplates from './admin/AdminMailTemplates'
 import AdminPromotions from './admin/AdminPromotionsRibbon'
 import { footerPageDefinitions } from './config/footerPages'
+import useScrollReveal from './hooks/useScrollReveal'
 
 function App() {
   const location = useLocation()
+  useScrollReveal()
 
   return (
     <div className="flex min-h-screen flex-col bg-illusion-white text-illusion-black">

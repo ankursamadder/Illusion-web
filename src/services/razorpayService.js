@@ -1,22 +1,47 @@
-const loadRazorpay = () => {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined') {
-      resolve(false)
-      return
-    }
+let razorpayScriptPromise = null
 
-    if (window.Razorpay) {
-      resolve(true)
+const loadRazorpay = () => {
+  if (typeof window === 'undefined') return Promise.resolve(false)
+  if (window.Razorpay) return Promise.resolve(true)
+
+  if (razorpayScriptPromise) return razorpayScriptPromise
+
+  razorpayScriptPromise = new Promise((resolve) => {
+    const existingScript = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+    )
+
+    if (existingScript) {
+      if (window.Razorpay || existingScript.dataset.loaded === 'true') {
+        resolve(true)
+        return
+      }
+
+      let settled = false
+      const settle = (value) => {
+        if (settled) return
+        settled = true
+        resolve(value)
+      }
+
+      existingScript.addEventListener('load', () => settle(true), { once: true })
+      existingScript.addEventListener('error', () => settle(false), { once: true })
+      window.setTimeout(() => settle(Boolean(window.Razorpay)), 1800)
       return
     }
 
     const script = document.createElement('script')
     script.src = 'https://checkout.razorpay.com/v1/checkout.js'
     script.async = true
-    script.onload = () => resolve(true)
+    script.onload = () => {
+      script.dataset.loaded = 'true'
+      resolve(true)
+    }
     script.onerror = () => resolve(false)
     document.body.appendChild(script)
   })
+
+  return razorpayScriptPromise
 }
 
 const DEFAULT_API_BASE_URL = 'https://api-uk22ijbdfq-el.a.run.app'
@@ -61,6 +86,22 @@ const createRazorpayOrder = async ({ amount, currency = 'INR', receipt, notes })
   return response.json()
 }
 
+const prewarmPaymentsApi = async () => {
+  const baseUrl = getApiBaseUrl()
+
+  try {
+    await fetch(`${baseUrl}/health`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    })
+  } catch {
+    // Ignore warmup failures; regular flow will handle real errors.
+  }
+}
+
 const verifyRazorpayPayment = async (payload) => {
   const baseUrl = getApiBaseUrl()
   const response = await fetch(`${baseUrl}/razorpay/verify`, {
@@ -81,6 +122,7 @@ const verifyRazorpayPayment = async (payload) => {
 
 export {
   loadRazorpay,
+  prewarmPaymentsApi,
   createRazorpayOrder,
   verifyRazorpayPayment,
 }

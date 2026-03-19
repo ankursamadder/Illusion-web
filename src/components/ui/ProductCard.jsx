@@ -4,6 +4,7 @@ import Card from './Card'
 import Badge from './Badge'
 import Button from './Button'
 import IconButton from './IconButton'
+import BlurImage from './BlurImage'
 import { formatCurrency } from '../../utils/formatCurrency'
 import useCartStore from '../../hooks/useCartStore'
 import useWishlistStore from '../../hooks/useWishlistStore'
@@ -72,11 +73,13 @@ const ProductCard = ({ product }) => {
           aria-label={`View ${name}`}
         >
           {displayImage ? (
-            <img
+            <BlurImage
               src={displayImage}
               alt={name}
               loading="lazy"
               decoding="async"
+              fetchPriority="auto"
+              wrapperClassName="h-full w-full"
               className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             />
           ) : (

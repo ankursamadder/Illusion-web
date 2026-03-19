@@ -2,7 +2,7 @@
 
 const PageShell = ({ title, subtitle, children }) => {
   return (
-    <section className="py-12">
+    <section data-reveal className="py-12">
       <Container>
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold text-illusion-black">{title}</h1>

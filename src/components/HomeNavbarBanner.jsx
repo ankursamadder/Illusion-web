@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { subscribeHomeNavbarBannerPromotion } from '../services/promotionService'
+import BlurImage from './ui/BlurImage'
 
 const MOBILE_BREAKPOINT = 768
 
@@ -94,25 +95,27 @@ const HomeNavbarBanner = () => {
             style={{ transform: `translateX(-${activeIndex * 100}%)` }}
           >
             {images.map((imageUrl, index) => (
-              <img
+              <BlurImage
                 key={`${imageUrl}_${index}`}
                 src={imageUrl}
                 alt={`Illusion promotions banner ${index + 1}`}
                 loading={index === 0 ? 'eager' : 'lazy'}
                 fetchPriority={index === 0 ? 'high' : 'auto'}
                 decoding="async"
+                wrapperClassName="block h-auto w-full shrink-0"
                 className="block h-auto w-full shrink-0 object-cover"
               />
             ))}
           </div>
         </div>
       ) : (
-        <img
+        <BlurImage
           src={images[0]}
           alt="Illusion promotions banner"
           loading="eager"
           fetchPriority="high"
           decoding="async"
+          wrapperClassName="block h-auto w-full"
           className="block h-auto w-full object-cover"
         />
       )}

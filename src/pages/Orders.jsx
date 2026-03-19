@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import PageShell from './PageShell'
 import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
+import BlurImage from '../components/ui/BlurImage'
 import { useAuth } from '../context/AuthContext'
 import { getUserOrders } from '../services/orderService'
 import { formatCurrency } from '../utils/formatCurrency'
@@ -76,9 +77,12 @@ const Orders = () => {
                     >
                       <div className="h-12 w-12 overflow-hidden rounded-xl bg-illusion-blush/40">
                         {item.image ? (
-                          <img loading="lazy" decoding="async"
+                          <BlurImage
                             src={item.image}
                             alt={item.name}
+                            loading="lazy"
+                            decoding="async"
+                            wrapperClassName="h-full w-full"
                             className="h-full w-full object-cover"
                           />
                         ) : null}

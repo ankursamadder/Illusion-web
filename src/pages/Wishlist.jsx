@@ -1,6 +1,7 @@
 ﻿import PageShell from './PageShell'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
+import BlurImage from '../components/ui/BlurImage'
 import useWishlistStore from '../hooks/useWishlistStore'
 import useCartStore from '../hooks/useCartStore'
 import { formatCurrency } from '../utils/formatCurrency'
@@ -17,9 +18,12 @@ const Wishlist = () => {
             <Card key={item.id} className="flex flex-col gap-4 md:flex-row md:items-center">
               <div className="h-20 w-20 overflow-hidden rounded-2xl bg-illusion-blush/40">
                 {item.image ? (
-                  <img loading="lazy" decoding="async"
+                  <BlurImage
                     src={item.image}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
+                    wrapperClassName="h-full w-full"
                     className="h-full w-full object-cover"
                   />
                 ) : null}

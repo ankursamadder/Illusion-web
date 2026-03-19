@@ -34,7 +34,7 @@ const ProductSection = ({
   }
 
   return (
-    <section className="py-12">
+    <section data-reveal className="py-12">
       <Container>
         <div className="mb-6 flex flex-col items-start gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div>
@@ -149,7 +149,7 @@ const BestSellerSection = ({ videos, loading, onBuyNow, sectionRef }) => {
   }
 
   return (
-    <section ref={sectionRef} id="best-seller" className="py-12">
+    <section data-reveal ref={sectionRef} id="best-seller" className="py-12">
       <Container>
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
@@ -234,7 +234,7 @@ const ReviewsSection = ({ reviews, loading }) => {
   }
 
   return (
-    <section className="py-12">
+    <section data-reveal className="py-12">
       <Container>
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -365,7 +365,7 @@ const Home = () => {
 
   return (
     <div>
-      <section className="bg-illusion-blush/50 py-16">
+      <section data-reveal className="bg-illusion-blush/50 py-16">
         <Container className="grid gap-10 md:grid-cols-2 md:items-center">
           <div className="space-y-6">
             <p className="text-sm uppercase tracking-[0.3em] text-illusion-black/60">

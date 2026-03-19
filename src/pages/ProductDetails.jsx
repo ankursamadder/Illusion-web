@@ -7,6 +7,7 @@ import Button from '../components/ui/Button'
 import IconButton from '../components/ui/IconButton'
 import ProductCard from '../components/ui/ProductCard'
 import Card from '../components/ui/Card'
+import BlurImage from '../components/ui/BlurImage'
 import { getProductById, getProducts } from '../services/productService'
 import { formatCurrency } from '../utils/formatCurrency'
 import useCartStore from '../hooks/useCartStore'
@@ -158,7 +159,7 @@ const ProductDetails = () => {
 
   return (
     <PageShell title={product.name} subtitle={product.category ?? ''}>
-      <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
+      <div data-reveal className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
         <div className="space-y-4">
           <div className="grid gap-3 sm:gap-4 sm:grid-cols-[120px_1fr]">
             <div className="flex gap-3 sm:flex-col">
@@ -174,7 +175,14 @@ const ProductDetails = () => {
                         : 'border-illusion-black/10'
                     }`}
                   >
-                    <img loading="lazy" decoding="async" src={img} alt="" className="h-full w-full object-cover" />
+                    <BlurImage
+                      src={img}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      wrapperClassName="h-full w-full"
+                      className="h-full w-full object-cover"
+                    />
                   </button>
                 ))
               ) : (
@@ -185,9 +193,13 @@ const ProductDetails = () => {
             </div>
             <div className="overflow-hidden rounded-3xl bg-illusion-blush/40">
               {selectedImage ? (
-                <img loading="lazy" decoding="async"
+                <BlurImage
                   src={selectedImage}
                   alt={product.name}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                  wrapperClassName="h-full w-full"
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -260,7 +272,7 @@ const ProductDetails = () => {
         </div>
       </div>
 
-      <div className="mt-12">
+      <div data-reveal className="mt-12">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl font-semibold text-illusion-black">
