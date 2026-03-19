@@ -64,7 +64,7 @@ const ProductCard = ({ product }) => {
   }
 
   return (
-    <Card className="group flex h-full flex-col gap-2.5 p-2 sm:gap-3 sm:p-3">
+    <Card className="group flex h-full flex-col gap-2 p-1.5 sm:gap-2.5 sm:p-2.5">
       <div className="relative overflow-hidden rounded-2xl bg-illusion-blush/50">
         <button
           type="button"
@@ -115,14 +115,14 @@ const ProductCard = ({ product }) => {
           />
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-2.5 sm:gap-3">
+      <div className="flex flex-1 flex-col gap-2 sm:gap-2.5">
         <div>
           <button type="button" onClick={handleViewDetails} className="text-left">
-            <h3 className="min-h-[3.6rem] overflow-hidden text-[1.15rem] font-semibold leading-tight text-illusion-black hover:underline sm:min-h-[4.4rem] sm:text-lg">
+            <h3 className="min-h-[3.1rem] overflow-hidden text-[1.08rem] font-semibold leading-tight text-illusion-black hover:underline sm:min-h-[3.8rem] sm:text-[1.05rem]">
               {name}
             </h3>
           </button>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
             <span className="font-medium text-illusion-black">
               {formatCurrency(safePrice)}
             </span>
@@ -140,12 +140,12 @@ const ProductCard = ({ product }) => {
           <button
             type="button"
             onClick={handleViewDetails}
-            className="mt-1 text-xs text-illusion-black/60 hover:text-illusion-black hover:underline sm:text-sm"
+            className="mt-0.5 text-xs text-illusion-black/60 hover:text-illusion-black hover:underline"
           >
             View details
           </button>
         </div>
-        <div className="mt-auto flex flex-col gap-2">
+        <div className="mt-auto flex flex-col gap-1.5 sm:gap-2">
           <Button size="sm" className="h-10 sm:h-11" onClick={() => addItem(product)}>
             Add to cart
           </Button>

@@ -49,7 +49,7 @@ const ProductSection = ({
         {loading ? (
           <Card className="text-sm text-illusion-black/60">Loading products...</Card>
         ) : products.length ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 xl:grid-cols-4">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

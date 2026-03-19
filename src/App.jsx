@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Navbar from './components/Navbar'
@@ -37,6 +38,10 @@ import useScrollReveal from './hooks/useScrollReveal'
 function App() {
   const location = useLocation()
   useScrollReveal()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [location.pathname])
 
   return (
     <div className="flex min-h-screen flex-col bg-illusion-white text-illusion-black">

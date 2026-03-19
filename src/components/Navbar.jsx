@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   Heart,
   LayoutDashboard,
@@ -40,6 +40,7 @@ const getSearchableFields = (product) => {
 
 const Navbar = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout } = useAuth() || {}
   const { items } = useCartStore()
   const currentUser = user ?? { role: 'user' }
@@ -153,6 +154,11 @@ const Navbar = () => {
               to="/"
               className="inline-flex items-center"
               aria-label="Illusion home"
+              onClick={() => {
+                if (location.pathname === '/') {
+                  window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+                }
+              }}
             >
               <img
                 src={illusionLogo}
