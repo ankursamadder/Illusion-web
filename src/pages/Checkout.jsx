@@ -22,6 +22,10 @@ import {
   prewarmPaymentsApi,
   verifyRazorpayPayment,
 } from '../services/razorpayService'
+import {
+  defaultPaymentSettings,
+  getPaymentSettings,
+} from '../services/paymentSettingsService'
 
 const paymentOptions = [
   {
@@ -72,6 +76,8 @@ const Checkout = () => {
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [newAddress, setNewAddress] = useState(emptyAddressForm)
   const [paymentMethod, setPaymentMethod] = useState('online')
+  const [paymentSettings, setPaymentSettings] = useState(defaultPaymentSettings)
+  const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -105,10 +111,61 @@ const Checkout = () => {
   }, [user])
 
   useEffect(() => {
+    let mounted = true
+
+    const loadPaymentMethodSettings = async () => {
+      setPaymentSettingsLoading(true)
+      try {
+        const settings = await getPaymentSettings()
+        if (!mounted) return
+        setPaymentSettings(settings)
+      } catch (error) {
+        if (mounted) {
+          toast.error(error?.message ?? 'Failed to load payment settings')
+        }
+      } finally {
+        if (mounted) setPaymentSettingsLoading(false)
+      }
+    }
+
+    loadPaymentMethodSettings()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
     // Warm SDK + backend so payment sheet opens faster on click.
+    if (paymentSettingsLoading || !paymentSettings.onlinePaymentEnabled) return
     loadRazorpay().catch(() => {})
     prewarmPaymentsApi().catch(() => {})
-  }, [])
+  }, [paymentSettingsLoading, paymentSettings.onlinePaymentEnabled])
+
+  const availablePaymentOptions = useMemo(() => {
+    return paymentOptions.filter((option) => {
+      if (option.value === 'cod') return paymentSettings.codEnabled
+      if (option.value === 'online') return paymentSettings.onlinePaymentEnabled
+      return true
+    })
+  }, [paymentSettings])
+
+  useEffect(() => {
+    if (paymentSettingsLoading) return
+
+    if (!availablePaymentOptions.length) {
+      setPaymentMethod('')
+      return
+    }
+
+    const isSelectedMethodAvailable = availablePaymentOptions.some(
+      (option) => option.value === paymentMethod
+    )
+
+    if (!isSelectedMethodAvailable) {
+      setPaymentMethod(availablePaymentOptions[0].value)
+    }
+  }, [availablePaymentOptions, paymentMethod, paymentSettingsLoading])
 
   const totals = useMemo(() => {
     return calculateOrderTotals({
@@ -125,11 +182,21 @@ const Checkout = () => {
     return (
       Boolean(selectedAddress) &&
       Boolean(paymentMethod) &&
+      availablePaymentOptions.length > 0 &&
       items.length > 0 &&
       !chargesLoading &&
-      !couponLoading
+      !couponLoading &&
+      !paymentSettingsLoading
     )
-  }, [chargesLoading, couponLoading, items.length, paymentMethod, selectedAddress])
+  }, [
+    availablePaymentOptions.length,
+    chargesLoading,
+    couponLoading,
+    items.length,
+    paymentMethod,
+    paymentSettingsLoading,
+    selectedAddress,
+  ])
 
   const handleAddAddress = async () => {
     if (!newAddress.name || !newAddress.line1 || !newAddress.phone || !newAddress.zip) {
@@ -162,6 +229,19 @@ const Checkout = () => {
 
   const handleConfirm = async () => {
     if (!items.length || !user || !selectedAddress) return
+    if (paymentSettingsLoading) return
+    if (!paymentMethod) {
+      toast.error('No payment method is currently available')
+      return
+    }
+    if (paymentMethod === 'cod' && !paymentSettings.codEnabled) {
+      toast.error('Cash on delivery is currently unavailable')
+      return
+    }
+    if (paymentMethod === 'online' && !paymentSettings.onlinePaymentEnabled) {
+      toast.error('Online payment is currently unavailable')
+      return
+    }
     setSubmitting(true)
 
     const address = addresses.find((item) => item.id === selectedAddress) ?? null
@@ -466,40 +546,48 @@ const Checkout = () => {
         <div className="space-y-4">
           <Card className="space-y-4">
             <h2 className="text-lg font-semibold text-illusion-black">Payment Option</h2>
-            <div className="space-y-2">
-              {paymentOptions.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex cursor-pointer items-start gap-3 rounded-2xl border border-illusion-black/10 bg-white px-4 py-3"
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === option.value}
-                    onChange={() => setPaymentMethod(option.value)}
-                    className="mt-1"
-                  />
-                  <div className="w-full space-y-2">
-                    <p className="text-sm font-medium text-illusion-black">{option.label}</p>
-                    <p className="text-xs text-illusion-black/55">{option.helper}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {option.icons.map((item) => {
-                        const Icon = item.icon
-                        return (
-                          <span
-                            key={item.id}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-illusion-black/10 bg-white px-2.5 py-1 text-[11px] font-medium text-illusion-black/70"
-                          >
-                            <Icon className="h-3.5 w-3.5" />
-                            {item.label}
-                          </span>
-                        )
-                      })}
+            {paymentSettingsLoading ? (
+              <p className="text-sm text-illusion-black/60">Loading payment methods...</p>
+            ) : availablePaymentOptions.length ? (
+              <div className="space-y-2">
+                {availablePaymentOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-illusion-black/10 bg-white px-4 py-3"
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={paymentMethod === option.value}
+                      onChange={() => setPaymentMethod(option.value)}
+                      className="mt-1"
+                    />
+                    <div className="w-full space-y-2">
+                      <p className="text-sm font-medium text-illusion-black">{option.label}</p>
+                      <p className="text-xs text-illusion-black/55">{option.helper}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {option.icons.map((item) => {
+                          const Icon = item.icon
+                          return (
+                            <span
+                              key={item.id}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-illusion-black/10 bg-white px-2.5 py-1 text-[11px] font-medium text-illusion-black/70"
+                            >
+                              <Icon className="h-3.5 w-3.5" />
+                              {item.label}
+                            </span>
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
-                </label>
-              ))}
-            </div>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-illusion-black/20 bg-illusion-blush/20 px-4 py-3 text-sm text-illusion-black/70">
+                All payment methods are currently turned off. Please try again later.
+              </p>
+            )}
           </Card>
 
           <Card className="space-y-4">
@@ -558,6 +646,11 @@ const Checkout = () => {
 
             {!selectedAddress ? (
               <p className="text-xs text-red-500">Please select or add an address first.</p>
+            ) : null}
+            {!paymentSettingsLoading && !availablePaymentOptions.length ? (
+              <p className="text-xs text-red-500">
+                Payments are temporarily unavailable for checkout.
+              </p>
             ) : null}
 
             <Button className="w-full" onClick={handleConfirm} disabled={!canPlaceOrder || submitting}>

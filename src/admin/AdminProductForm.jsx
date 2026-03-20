@@ -32,6 +32,18 @@ import {
   saveProductImageLibrary,
 } from '../services/productImageLibraryService'
 
+const clearEditorStoredMarks = (editor) => {
+  if (!editor?.view) return
+  editor.view.dispatch(editor.state.tr.setStoredMarks([]))
+}
+
+const hasSelectedEditorText = (editor) => {
+  if (!editor?.state) return false
+  const { from, to, empty } = editor.state.selection
+  if (empty || from === to) return false
+  return editor.state.doc.textBetween(from, to, ' ').trim().length > 0
+}
+
 const ProductForm = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -58,6 +70,7 @@ const ProductForm = () => {
   const [newCategory, setNewCategory] = useState('')
   const [addingCategory, setAddingCategory] = useState(false)
   const [savingCategory, setSavingCategory] = useState(false)
+  const [hasFormatSelection, setHasFormatSelection] = useState(false)
 
   const selectedLibraryKeySet = useMemo(
     () => new Set(selectedLibraryKeys),
@@ -84,13 +97,33 @@ const ProductForm = () => {
     content: description || '',
     onUpdate: ({ editor }) => {
       setDescription(editor.getHTML())
+      setHasFormatSelection(hasSelectedEditorText(editor))
+    },
+    onSelectionUpdate: ({ editor }) => {
+      setHasFormatSelection(hasSelectedEditorText(editor))
     },
     onFocus: ({ editor }) => {
       if (editor.isEmpty) {
         editor.commands.unsetAllMarks()
+        clearEditorStoredMarks(editor)
       }
+      setHasFormatSelection(hasSelectedEditorText(editor))
+    },
+    onBlur: () => {
+      setHasFormatSelection(false)
     },
   })
+
+  useEffect(() => {
+    if (!editor) return
+    setHasFormatSelection(hasSelectedEditorText(editor))
+  }, [editor])
+
+  const runSelectionFormat = (command) => {
+    if (!editor || !hasFormatSelection) return
+    command(editor.chain().focus()).run()
+    clearEditorStoredMarks(editor)
+  }
 
 
   useEffect(() => {
@@ -541,46 +574,56 @@ const ProductForm = () => {
               <div className="flex flex-wrap items-center gap-2 border-b border-illusion-black/10 px-3 py-2">
                 <button
                   type="button"
-                  onClick={() => editor?.chain().focus().toggleBold().run()}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black ${editor?.isActive('bold') ? 'bg-illusion-blush/50' : ''}`}
+                  onClick={() => runSelectionFormat((chain) => chain.toggleBold())}
+                  onMouseDown={(event) => event.preventDefault()}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black transition ${hasFormatSelection && editor?.isActive('bold') ? 'bg-illusion-blush/50' : ''} ${hasFormatSelection ? '' : 'cursor-not-allowed opacity-40'}`}
                   aria-label="Bold"
                   title="Bold"
+                  disabled={!hasFormatSelection}
                 >
                   <Bold className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => editor?.chain().focus().toggleItalic().run()}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black ${editor?.isActive('italic') ? 'bg-illusion-blush/50' : ''}`}
+                  onClick={() => runSelectionFormat((chain) => chain.toggleItalic())}
+                  onMouseDown={(event) => event.preventDefault()}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black transition ${hasFormatSelection && editor?.isActive('italic') ? 'bg-illusion-blush/50' : ''} ${hasFormatSelection ? '' : 'cursor-not-allowed opacity-40'}`}
                   aria-label="Italic"
                   title="Italic"
+                  disabled={!hasFormatSelection}
                 >
                   <Italic className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => editor?.chain().focus().toggleUnderline().run()}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black ${editor?.isActive('underline') ? 'bg-illusion-blush/50' : ''}`}
+                  onClick={() => runSelectionFormat((chain) => chain.toggleUnderline())}
+                  onMouseDown={(event) => event.preventDefault()}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black transition ${hasFormatSelection && editor?.isActive('underline') ? 'bg-illusion-blush/50' : ''} ${hasFormatSelection ? '' : 'cursor-not-allowed opacity-40'}`}
                   aria-label="Underline"
                   title="Underline"
+                  disabled={!hasFormatSelection}
                 >
                   <Underline className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => editor?.chain().focus().toggleBulletList().run()}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black ${editor?.isActive('bulletList') ? 'bg-illusion-blush/50' : ''}`}
+                  onClick={() => runSelectionFormat((chain) => chain.toggleBulletList())}
+                  onMouseDown={(event) => event.preventDefault()}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black transition ${hasFormatSelection && editor?.isActive('bulletList') ? 'bg-illusion-blush/50' : ''} ${hasFormatSelection ? '' : 'cursor-not-allowed opacity-40'}`}
                   aria-label="Bulleted list"
                   title="Bulleted list"
+                  disabled={!hasFormatSelection}
                 >
                   <List className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black ${editor?.isActive('orderedList') ? 'bg-illusion-blush/50' : ''}`}
+                  onClick={() => runSelectionFormat((chain) => chain.toggleOrderedList())}
+                  onMouseDown={(event) => event.preventDefault()}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border border-illusion-black/10 p-0 text-illusion-black transition ${hasFormatSelection && editor?.isActive('orderedList') ? 'bg-illusion-blush/50' : ''} ${hasFormatSelection ? '' : 'cursor-not-allowed opacity-40'}`}
                   aria-label="Numbered list"
                   title="Numbered list"
+                  disabled={!hasFormatSelection}
                 >
                   <ListOrdered className="h-4 w-4" />
                 </button>
@@ -591,7 +634,7 @@ const ProductForm = () => {
               />
             </div>
             <p className="mt-2 text-xs text-illusion-black/50">
-              Basic formatting: bold, italic, underline, bullets, and numbers.
+              Select text first, then use formatting tools for bold, italic, underline, bullets, and numbers.
             </p>
           </label>
           <div className="grid gap-4 md:grid-cols-2">

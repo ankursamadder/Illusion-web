@@ -15,6 +15,7 @@ const collections = {
   charges: 'charges',
   addresses: 'addresses',
   promotions: 'promotions',
+  storeSettings: 'storeSettings',
   footerPages: 'footerPages',
   contactEnquiries: 'contactEnquiries',
   careerEnquiries: 'careerEnquiries',
