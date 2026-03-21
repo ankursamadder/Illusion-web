@@ -69,7 +69,7 @@ const Orders = () => {
               </div>
 
               {order.items?.length ? (
-                <div className="space-y-2">
+                <div className="max-h-[18rem] space-y-2 overflow-y-auto pr-1">
                   {order.items.map((item) => (
                     <div
                       key={`${order.id}_${item.id}`}

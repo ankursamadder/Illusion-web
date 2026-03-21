@@ -145,7 +145,7 @@ const AdminNotificationsMenu = () => {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[360px] rounded-2xl border border-illusion-black/10 bg-white p-2 shadow-card">
+        <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[min(22rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-illusion-black/10 bg-white p-2 shadow-card">
           <div className="mb-2 flex items-center justify-between px-2">
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-illusion-black/60">
               Notifications

@@ -242,6 +242,88 @@ const OrderRow = ({ order, onDeleteOrder, onSaveStatus, onOpenDetails }) => {
   )
 }
 
+const OrderMobileCard = ({ order, onDeleteOrder, onSaveStatus, onOpenDetails }) => {
+  const [status, setStatus] = useState(getDisplayOrderStatus(order))
+
+  useEffect(() => {
+    setStatus(getDisplayOrderStatus(order))
+  }, [order.paymentMethod, order.status])
+
+  return (
+    <Card className="space-y-4 p-4">
+      <button
+        type="button"
+        onClick={() => onOpenDetails(order)}
+        className="block w-full text-left"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-illusion-black/50">
+              Order #{getOrderNumber(order)}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-illusion-black">
+              {order.customerName ?? '-'}
+            </p>
+            <p className="truncate text-xs text-illusion-black/60">
+              {order.email ?? '-'}
+            </p>
+          </div>
+          <StatusBadge status={status} />
+        </div>
+        <div className="mt-3 space-y-1 text-xs text-illusion-black/70">
+          <p>{(order.items ?? []).slice(0, 2).map((item) => item.name).join(', ') || '-'}</p>
+          <p>{formatDate(order.createdAt)}</p>
+          <p className="text-sm font-semibold text-illusion-black">
+            {formatCurrency(order.total ?? 0)}
+          </p>
+        </div>
+      </button>
+
+      <div className="space-y-2 border-t border-illusion-black/10 pt-3">
+        <select
+          className="w-full rounded-2xl border border-illusion-black/10 bg-white px-3 py-2 text-sm text-illusion-black outline-none"
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+        >
+          {statusOptions.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Button size="sm" onClick={() => onSaveStatus(order.id, { status })}>
+            Save
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="gap-1"
+            disabled={status === 'Cancelled' || status === 'Delivered'}
+            onClick={() => {
+              setStatus('Cancelled')
+              onSaveStatus(order.id, { status: 'Cancelled' })
+            }}
+          >
+            <XCircle className="h-3.5 w-3.5" />
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1 border border-red-200 text-red-500 hover:text-red-600"
+            onClick={() => onDeleteOrder(order.id)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </Button>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
 const AdminOrders = () => {
   const location = useLocation()
   const [orders, setOrders] = useState([])
@@ -317,7 +399,7 @@ const AdminOrders = () => {
       title="Manage Orders"
       subtitle="Track and update order progress. Click any order to view full details."
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-illusion-black/60">
           Showing {filteredOrders.length} of {nonInitiatedOrders.length} orders
         </p>
@@ -326,7 +408,7 @@ const AdminOrders = () => {
           <select
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            className="rounded-full border border-illusion-black/10 bg-white px-3 py-1 text-xs text-illusion-black outline-none"
+            className="min-w-0 rounded-full border border-illusion-black/10 bg-white px-3 py-1 text-xs text-illusion-black outline-none"
           >
             {filterOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -340,48 +422,61 @@ const AdminOrders = () => {
       {loading ? (
         <Card className="text-sm text-illusion-black/60">Loading orders...</Card>
       ) : filteredOrders.length ? (
-        <Card className="overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left">
-              <thead className="bg-illusion-blush/30">
-                <tr>
-                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
-                    Order ID
-                  </th>
-                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
-                    Customer
-                  </th>
-                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
-                    Product
-                  </th>
-                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
-                    Amount
-                  </th>
-                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
-                    Status
-                  </th>
-                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
-                    Date
-                  </th>
-                  <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => (
-                  <OrderRow
-                    key={order.id}
-                    order={order}
-                    onDeleteOrder={handleDelete}
-                    onSaveStatus={handleSave}
-                    onOpenDetails={setSelectedOrder}
-                  />
-                ))}
-              </tbody>
-            </table>
+        <>
+          <div className="space-y-3 lg:hidden">
+            {filteredOrders.map((order) => (
+              <OrderMobileCard
+                key={order.id}
+                order={order}
+                onDeleteOrder={handleDelete}
+                onSaveStatus={handleSave}
+                onOpenDetails={setSelectedOrder}
+              />
+            ))}
           </div>
-        </Card>
+          <Card className="hidden overflow-hidden p-0 lg:block">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left">
+                <thead className="bg-illusion-blush/30">
+                  <tr>
+                    <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                      Order ID
+                    </th>
+                    <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                      Customer
+                    </th>
+                    <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                      Product
+                    </th>
+                    <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                      Amount
+                    </th>
+                    <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                      Status
+                    </th>
+                    <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                      Date
+                    </th>
+                    <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map((order) => (
+                    <OrderRow
+                      key={order.id}
+                      order={order}
+                      onDeleteOrder={handleDelete}
+                      onSaveStatus={handleSave}
+                      onOpenDetails={setSelectedOrder}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
       ) : (
         <Card className="text-sm text-illusion-black/60">
           No orders found for this filter.

@@ -5,6 +5,7 @@ import {
   FileText,
   LayoutDashboard,
   Mail,
+  Menu,
   Megaphone,
   Package,
   PlusCircle,
@@ -15,6 +16,7 @@ import {
   CreditCard,
   Settings,
   Users,
+  X,
   Ticket,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -51,11 +53,15 @@ const AdminLayout = ({ title, subtitle, children }) => {
   const [productsOpen, setProductsOpen] = useState(
     location.pathname.startsWith('/admin/products')
   )
+<<<<<<< HEAD
   const [paymentSettingsOpen, setPaymentSettingsOpen] = useState(false)
   const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(true)
   const [paymentSettingsSaving, setPaymentSettingsSaving] = useState(false)
   const [paymentSettings, setPaymentSettings] = useState(defaultPaymentSettings)
   const [paymentSettingsDraft, setPaymentSettingsDraft] = useState(defaultPaymentSettings)
+=======
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+>>>>>>> 2bd89e0 (update)
 
   useEffect(() => {
     if (location.pathname.startsWith('/admin/orders')) {
@@ -70,6 +76,7 @@ const AdminLayout = ({ title, subtitle, children }) => {
   }, [location.pathname])
 
   useEffect(() => {
+<<<<<<< HEAD
     let mounted = true
 
     const loadPaymentSettings = async () => {
@@ -113,10 +120,151 @@ const AdminLayout = ({ title, subtitle, children }) => {
       setPaymentSettingsSaving(false)
     }
   }
+=======
+    setMobileNavOpen(false)
+  }, [location.pathname])
+
+  const baseLinkClasses =
+    'flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition'
+  const navLinkClasses = (isActive) =>
+    `${baseLinkClasses} ${
+      isActive
+        ? 'bg-illusion-blush/70 text-illusion-black'
+        : 'text-illusion-black/70 hover:bg-illusion-blush/40 hover:text-illusion-black'
+    }`
+  const subLinkClasses = (isActive) =>
+    `ml-7 flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition ${
+      isActive
+        ? 'bg-illusion-blush/70 text-illusion-black'
+        : 'text-illusion-black/60 hover:bg-illusion-blush/40 hover:text-illusion-black'
+    }`
+
+  const sidebarContent = (
+    <>
+      <div className="mb-4 flex items-start justify-between gap-3 px-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-illusion-black/50">
+            Admin
+          </p>
+          <h2 className="text-lg font-semibold text-illusion-black">
+            {title}
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMobileNavOpen(false)}
+          className="rounded-full p-2 text-illusion-black/50 transition hover:bg-illusion-blush/40 hover:text-illusion-black lg:hidden"
+          aria-label="Close admin menu"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <nav className="space-y-1">
+        {primaryItems.map((item) => {
+          const Icon = item.icon
+          return (
+            <NavLink
+              key={item.label}
+              to={item.href}
+              className={({ isActive }) => navLinkClasses(isActive)}
+              end={item.href === '/admin'}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </NavLink>
+          )
+        })}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1">
+            <NavLink
+              to="/admin/products"
+              className={({ isActive }) => `${navLinkClasses(isActive)} flex-1`}
+            >
+              <Package className="h-4 w-4" />
+              Products
+            </NavLink>
+            <button
+              type="button"
+              onClick={() => setProductsOpen((prev) => !prev)}
+              className="rounded-xl p-2 text-illusion-black/50 transition hover:bg-illusion-blush/40 hover:text-illusion-black"
+              aria-label="Toggle product options"
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition ${productsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
+          {productsOpen ? (
+            <>
+              <NavLink
+                to="/admin/products/new"
+                className={({ isActive }) => subLinkClasses(isActive)}
+              >
+                <PlusCircle className="h-4 w-4" />
+                Add Product
+              </NavLink>
+              <NavLink
+                to="/admin/products/gallery"
+                className={({ isActive }) => subLinkClasses(isActive)}
+              >
+                <ImageIcon className="h-4 w-4" />
+                Product Gallery
+              </NavLink>
+            </>
+          ) : null}
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-1">
+            <NavLink
+              to="/admin/orders"
+              className={({ isActive }) => `${navLinkClasses(isActive)} flex-1`}
+            >
+              <ClipboardList className="h-4 w-4" />
+              Manage Orders
+            </NavLink>
+            <button
+              type="button"
+              onClick={() => setOrdersOpen((prev) => !prev)}
+              className="rounded-xl p-2 text-illusion-black/50 transition hover:bg-illusion-blush/40 hover:text-illusion-black"
+              aria-label="Toggle order options"
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition ${ordersOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
+          {ordersOpen ? (
+            <NavLink
+              to="/admin/orders/initiated"
+              className={({ isActive }) => subLinkClasses(isActive)}
+            >
+              Initiated Orders
+            </NavLink>
+          ) : null}
+        </div>
+        {secondaryItems.map((item) => {
+          const Icon = item.icon
+          return (
+            <NavLink
+              key={item.label}
+              to={item.href}
+              className={({ isActive }) => navLinkClasses(isActive)}
+              end={item.href === '/admin'}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </NavLink>
+          )
+        })}
+      </nav>
+    </>
+  )
+>>>>>>> 2bd89e0 (update)
 
   return (
     <section className="admin-no-reveal bg-illusion-blush/10 py-10">
       <Container className="max-w-[1700px] px-3 sm:px-4 lg:px-5">
+<<<<<<< HEAD
         <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
           <aside className="rounded-3xl border border-illusion-black/10 bg-white p-4 shadow-card lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
             <div className="mb-4 flex items-start justify-between gap-3 px-3">
@@ -277,11 +425,48 @@ const AdminLayout = ({ title, subtitle, children }) => {
                 )
               })}
             </nav>
+=======
+        {mobileNavOpen ? (
+          <div className="fixed inset-0 z-40 bg-illusion-black/40 backdrop-blur-sm lg:hidden">
+            <button
+              type="button"
+              className="h-full w-full"
+              aria-label="Close admin navigation"
+              onClick={() => setMobileNavOpen(false)}
+            />
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-5">
+          <aside className="hidden rounded-3xl border border-illusion-black/10 bg-white p-4 shadow-card lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
+            {sidebarContent}
+>>>>>>> 2bd89e0 (update)
           </aside>
 
-          <div className="space-y-6">
-            <div className="flex items-start justify-between gap-4">
+          <aside
+            className={`fixed inset-y-0 left-0 z-50 w-[min(88vw,320px)] overflow-y-auto border-r border-illusion-black/10 bg-white p-4 shadow-card transition-transform duration-200 lg:hidden ${
+              mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
+          >
+            {sidebarContent}
+          </aside>
+
+          <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div>
+                <div className="mb-3 flex items-center gap-3 lg:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setMobileNavOpen(true)}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-illusion-black/10 bg-white text-illusion-black shadow-soft transition hover:-translate-y-0.5"
+                    aria-label="Open admin menu"
+                  >
+                    <Menu className="h-4 w-4" />
+                  </button>
+                  <p className="text-xs uppercase tracking-[0.25em] text-illusion-black/50">
+                    Admin Panel
+                  </p>
+                </div>
                 <h1 className="text-2xl font-semibold text-illusion-black">
                   {title}
                 </h1>
@@ -291,7 +476,9 @@ const AdminLayout = ({ title, subtitle, children }) => {
                   </p>
                 ) : null}
               </div>
-              <AdminNotificationsMenu />
+              <div className="self-end sm:self-start">
+                <AdminNotificationsMenu />
+              </div>
             </div>
             {children}
           </div>

@@ -6,7 +6,7 @@ const Modal = ({ open, title, children, onClose, actions, className }) => {
   if (!open) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-3 sm:px-4">
       <div
         className="absolute inset-0 bg-illusion-black/40 backdrop-blur-sm"
         onClick={onClose}
@@ -14,7 +14,7 @@ const Modal = ({ open, title, children, onClose, actions, className }) => {
       />
       <div
         className={clsx(
-          'relative z-10 w-full max-w-lg rounded-3xl bg-white p-6 shadow-card',
+          'relative z-10 max-h-[calc(100vh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-4 shadow-card sm:max-h-[calc(100vh-2rem)] sm:p-6',
           className
         )}
         role="dialog"
@@ -36,7 +36,11 @@ const Modal = ({ open, title, children, onClose, actions, className }) => {
           </button>
         </div>
         <div className="mt-4 text-sm text-illusion-black/70">{children}</div>
-        {actions ? <div className="mt-6 flex justify-end gap-3">{actions}</div> : null}
+        {actions ? (
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            {actions}
+          </div>
+        ) : null}
       </div>
     </div>,
     document.body
