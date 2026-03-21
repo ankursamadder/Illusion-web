@@ -299,7 +299,7 @@ const AdminLayout = ({ title, subtitle, children }) => {
             {sidebarContent}
           </aside>
 
-          <div className="space-y-4 sm:space-y-6">
+          <div className="min-w-0 space-y-4 sm:space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div>
                 <div className="mb-3 flex items-center gap-3 lg:hidden">
@@ -336,7 +336,9 @@ const AdminLayout = ({ title, subtitle, children }) => {
                 <AdminNotificationsMenu />
               </div>
             </div>
-            {children}
+            <div className="admin-scroll-mobile min-w-0">
+              <div className="min-w-0 space-y-4 sm:space-y-6">{children}</div>
+            </div>
           </div>
         </div>
       </Container>

@@ -93,60 +93,83 @@ const ReviewCard = ({ review }) => {
 }
 
 const BestSellerSection = ({ videos, loading, onBuyNow, sectionRef }) => {
+  const cardRefs = useRef([])
   const videoRefs = useRef([])
-  const [activeVideoIndex, setActiveVideoIndex] = useState(0)
+  const visibilityRatiosRef = useRef({})
+  const [activeVideoIndex, setActiveVideoIndex] = useState(-1)
 
   useEffect(() => {
-    setActiveVideoIndex(0)
+    setActiveVideoIndex(-1)
+    cardRefs.current = []
     videoRefs.current = []
+    visibilityRatiosRef.current = {}
   }, [videos.length])
 
   useEffect(() => {
     if (!videos.length) return undefined
 
-    const attemptPlay = () => {
-      const firstVideo = videoRefs.current[0]
-      if (!firstVideo) return
-      firstVideo.muted = true
-      firstVideo.playsInline = true
-      const playPromise = firstVideo.play()
-      if (typeof playPromise?.catch === 'function') {
-        playPromise.catch(() => {})
-      }
-    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const index = Number(entry.target.dataset.videoIndex)
+          if (Number.isNaN(index)) return
+          visibilityRatiosRef.current[index] = entry.isIntersecting
+            ? entry.intersectionRatio
+            : 0
+        })
 
-    const raf = window.requestAnimationFrame(attemptPlay)
-    const timeout = window.setTimeout(attemptPlay, 450)
+        let nextIndex = -1
+        let bestRatio = 0.4
+
+        Object.entries(visibilityRatiosRef.current).forEach(([key, ratio]) => {
+          if (ratio > bestRatio) {
+            bestRatio = ratio
+            nextIndex = Number(key)
+          }
+        })
+
+        setActiveVideoIndex((previous) =>
+          previous === nextIndex ? previous : nextIndex
+        )
+      },
+      {
+        threshold: [0.15, 0.35, 0.5, 0.7, 0.9],
+        rootMargin: '0px 0px -12% 0px',
+      }
+    )
+
+    cardRefs.current.forEach((card, index) => {
+      if (!card) return
+      card.dataset.videoIndex = String(index)
+      observer.observe(card)
+    })
 
     return () => {
-      window.cancelAnimationFrame(raf)
-      window.clearTimeout(timeout)
+      observer.disconnect()
     }
-  }, [videos.length])
+  }, [videos])
 
   useEffect(() => {
-    if (!videos.length) return
+    videoRefs.current.forEach((video, index) => {
+      if (!video) return
+      video.muted = true
+      video.playsInline = true
+
+      if (index !== activeVideoIndex) {
+        video.pause()
+      }
+    })
+
+    if (activeVideoIndex < 0) return
 
     const targetVideo = videoRefs.current[activeVideoIndex]
     if (!targetVideo) return
 
-    videoRefs.current.forEach((video, index) => {
-      if (!video || index === activeVideoIndex) return
-      video.pause()
-      video.currentTime = 0
-    })
-
-    targetVideo.muted = true
     const playPromise = targetVideo.play()
     if (typeof playPromise?.catch === 'function') {
       playPromise.catch(() => {})
     }
   }, [activeVideoIndex, videos])
-
-  const handleVideoEnded = (index) => {
-    if (!videos.length) return
-    setActiveVideoIndex((index + 1) % videos.length)
-  }
 
   return (
     <section data-reveal ref={sectionRef} id="best-seller" className="py-12">
@@ -165,7 +188,13 @@ const BestSellerSection = ({ videos, loading, onBuyNow, sectionRef }) => {
         ) : videos.length ? (
           <div className="grid gap-4 md:grid-cols-3">
             {videos.map((video, index) => (
-              <Card key={video.id} className="space-y-3 p-3">
+              <Card
+                key={video.id}
+                className="mx-auto w-full max-w-[20rem] space-y-3 p-3 md:max-w-none"
+                ref={(element) => {
+                  cardRefs.current[index] = element
+                }}
+              >
                 <video
                   ref={(element) => {
                     videoRefs.current = videoRefs.current.slice(0, videos.length)
@@ -173,13 +202,11 @@ const BestSellerSection = ({ videos, loading, onBuyNow, sectionRef }) => {
                   }}
                   src={video.videoUrl}
                   controls
-                  autoPlay={index === activeVideoIndex}
                   muted
                   playsInline
-                  preload="auto"
+                  preload="metadata"
                   onPlay={() => setActiveVideoIndex(index)}
-                  onEnded={() => handleVideoEnded(index)}
-                  className="aspect-[9/16] w-full rounded-2xl bg-black object-cover"
+                  className="aspect-[9/16] max-h-[70vh] w-full rounded-2xl bg-black object-cover"
                 />
                 <p className="truncate text-sm font-medium text-illusion-black">
                   {video.productName || 'Best Seller Product'}

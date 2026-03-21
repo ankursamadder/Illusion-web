@@ -61,6 +61,19 @@ img {
   min-width: 0;
 }
 
+.admin-scroll-mobile {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
+}
+
+.admin-scroll-mobile > * {
+  min-width: min-content;
+}
+
 @media (min-width: 640px) {
   .product-grid {
     gap: 1rem;
@@ -68,6 +81,10 @@ img {
 
   .product-grid--shop {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .admin-scroll-mobile > * {
+    min-width: 100%;
   }
 }
 

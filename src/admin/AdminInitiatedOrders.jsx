@@ -63,8 +63,8 @@ const AdminInitiatedOrders = () => {
         <Card className="text-sm text-illusion-black/60">Loading initiated orders...</Card>
       ) : initiatedOrders.length ? (
         <Card className="overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left">
+          <div className="admin-scroll-mobile overflow-x-auto">
+            <table className="min-w-[880px] text-left">
               <thead className="bg-illusion-blush/30">
                 <tr>
                   <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">

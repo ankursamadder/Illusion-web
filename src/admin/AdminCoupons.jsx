@@ -266,8 +266,8 @@ const AdminCoupons = () => {
         <Card className="text-sm text-illusion-black/60">Loading coupons...</Card>
       ) : coupons.length ? (
         <Card className="overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left">
+          <div className="admin-scroll-mobile overflow-x-auto">
+            <table className="min-w-[980px] text-left">
               <thead className="bg-illusion-blush/30">
                 <tr>
                   <th className="px-3 py-3 text-xs uppercase tracking-[0.1em] text-illusion-black/60">

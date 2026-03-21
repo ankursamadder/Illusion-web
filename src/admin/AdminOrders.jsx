@@ -435,8 +435,8 @@ const AdminOrders = () => {
             ))}
           </div>
           <Card className="hidden overflow-hidden p-0 lg:block">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
+            <div className="admin-scroll-mobile overflow-x-auto">
+              <table className="min-w-[920px] text-left">
                 <thead className="bg-illusion-blush/30">
                   <tr>
                     <th className="px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-illusion-black/60">
