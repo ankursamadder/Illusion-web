@@ -16,7 +16,7 @@ import { useAuth } from '../context/AuthContext'
 import useCartStore from '../hooks/useCartStore'
 import { getProducts } from '../services/productService'
 import { formatCurrency } from '../utils/formatCurrency'
-import illusionLogo from '../assets/Illusion logo.png'
+import wahmLogo from '../assets/wahm logo.png'
 
 const iconButtonBase =
   'relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-illusion-black/10 text-illusion-black/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-illusion-black/20 hover:text-illusion-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illusion-pink/50'
@@ -58,14 +58,16 @@ const Navbar = () => {
   const mobileSearchRef = useRef(null)
 
   useEffect(() => {
-    const savedPincode = localStorage.getItem('illusion_delivery_pincode')
+    const savedPincode =
+      localStorage.getItem('wahm_delivery_pincode') ||
+      localStorage.getItem('illusion_delivery_pincode')
     if (savedPincode) {
       setPincode(savedPincode)
     }
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('illusion_delivery_pincode', pincode)
+    localStorage.setItem('wahm_delivery_pincode', pincode)
   }, [pincode])
 
   useEffect(() => {
@@ -153,7 +155,7 @@ const Navbar = () => {
             <NavLink
               to="/"
               className="inline-flex items-center"
-              aria-label="Illusion home"
+              aria-label="Wahm home"
               onClick={() => {
                 if (location.pathname === '/') {
                   window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
@@ -161,8 +163,8 @@ const Navbar = () => {
               }}
             >
               <img
-                src={illusionLogo}
-                alt="Illusion"
+                src={wahmLogo}
+                alt="Wahm"
                 fetchPriority="high"
                 decoding="async"
                 className="h-9 w-auto object-contain"

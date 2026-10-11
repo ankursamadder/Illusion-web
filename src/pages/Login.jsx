@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Input from '../components/ui/Input'
@@ -69,7 +69,7 @@ const Login = () => {
         <Card className="space-y-6">
           <div className="space-y-2 text-center">
             <p className="text-xs uppercase tracking-[0.3em] text-illusion-black/50">
-              Illusion
+              Wahm
             </p>
             <h1 className="text-3xl font-semibold text-illusion-black">
               Welcome back

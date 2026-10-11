@@ -26,7 +26,7 @@ const adminTemplateRef = db.collection('mailTemplates').doc('adminNewOrder')
 const customerTemplateRef = db.collection('mailTemplates').doc('customerOrder')
 
 const defaultAdminTemplate = {
-  subject: '\u{1F6D2} New Order Received \u2013 Illusion Jewellery',
+  subject: '\u{1F6D2} New Order Received \u2013 Wahm Jewellery',
   body: `
     <p style="margin: 0 0 12px 0;">A new order has been placed.</p>
     <table style="border-collapse: collapse; width: 100%; max-width: 640px; border: 1px solid #e5e7eb;">
@@ -42,10 +42,10 @@ const defaultAdminTemplate = {
 }
 
 const defaultCustomerTemplate = {
-  subject: 'Order Confirmation \u2013 Illusion Jewellery',
+  subject: 'Order Confirmation \u2013 Wahm Jewellery',
   body: `
     <p style="margin: 0 0 10px 0;">Hi {{customerName}},</p>
-    <p style="margin: 0 0 12px 0;">Thank you for your order with Illusion Jewellery.</p>
+    <p style="margin: 0 0 12px 0;">Thank you for your order with Wahm Jewellery.</p>
     <table style="border-collapse: collapse; width: 100%; max-width: 640px; border: 1px solid #e5e7eb;">
       <tr><td style="padding: 10px; border: 1px solid #e5e7eb;"><strong>Product</strong></td><td style="padding: 10px; border: 1px solid #e5e7eb;">{{productName}}</td></tr>
       <tr><td style="padding: 10px; border: 1px solid #e5e7eb;"><strong>Price</strong></td><td style="padding: 10px; border: 1px solid #e5e7eb;">{{productPrice}}</td></tr>
@@ -152,7 +152,7 @@ const wrapEmailHtml = ({ title, bodyHtml, productImage }) => {
     <div style="background: #f8f8f8; padding: 20px;">
       <div style="max-width: 700px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 24px; font-family: Arial, sans-serif; color: #111827; border: 1px solid #e5e7eb;">
         <h2 style="margin: 0 0 8px 0;">${escapeHtml(title)}</h2>
-        <p style="margin: 0 0 16px 0; color: #6b7280;">Illusion Jewellery</p>
+        <p style="margin: 0 0 16px 0; color: #6b7280;">Wahm Jewellery</p>
         ${imageBlock}
         ${bodyHtml}
       </div>
@@ -320,7 +320,7 @@ const sendCustomerEmail = async (order, orderId, config) => {
     to: customerEmail,
     subject,
     html: wrapEmailHtml({
-      title: 'Order Confirmation \u2013 Illusion Jewellery',
+      title: 'Order Confirmation \u2013 Wahm Jewellery',
       bodyHtml: body,
       productImage: product.image,
     }),

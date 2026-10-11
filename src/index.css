@@ -101,18 +101,21 @@ img {
   }
 }
 
-.illusion-marquee {
+.illusion-marquee,
+.wahm-marquee {
   overflow: hidden;
   white-space: nowrap;
 }
 
-.illusion-marquee__track {
+.illusion-marquee__track,
+.wahm-marquee__track {
   display: inline-flex;
   min-width: max-content;
   animation: illusion-marquee 20s linear infinite;
 }
 
-.illusion-marquee__item {
+.illusion-marquee__item,
+.wahm-marquee__item {
   padding-right: 3rem;
   font-size: 0.75rem;
   font-weight: 600;
@@ -130,7 +133,8 @@ img {
   }
 }
 
-.illusion-page-enter {
+.illusion-page-enter,
+.wahm-page-enter {
   animation: illusion-page-enter 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 

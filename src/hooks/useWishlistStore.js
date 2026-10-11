@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand'
+import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 const useWishlistStore = create(
@@ -27,7 +27,7 @@ const useWishlistStore = create(
       clear: () => set({ items: [] }),
     }),
     {
-      name: 'illusion_wishlist',
+      name: 'wahm_wishlist',
       version: 1,
     }
   )

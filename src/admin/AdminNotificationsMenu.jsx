@@ -4,12 +4,16 @@ import { Bell, BriefcaseBusiness, MessageCircle, ShoppingBag } from 'lucide-reac
 import { getOrders } from '../services/orderService'
 import { getAdminNotifications } from '../services/enquiryService'
 
-const SEEN_NOTIFICATIONS_KEY = 'illusion_admin_seen_notifications'
+const SEEN_NOTIFICATIONS_KEY = 'wahm_admin_seen_notifications'
 
 const getStoredSeenNotifications = () => {
   if (typeof window === 'undefined') return []
   try {
-    const parsed = JSON.parse(localStorage.getItem(SEEN_NOTIFICATIONS_KEY) ?? '[]')
+    const raw =
+      localStorage.getItem(SEEN_NOTIFICATIONS_KEY) ??
+      localStorage.getItem('illusion_admin_seen_notifications') ??
+      '[]'
+    const parsed = JSON.parse(raw)
     return Array.isArray(parsed) ? parsed : []
   } catch {
     return []

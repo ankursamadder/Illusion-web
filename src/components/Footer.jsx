@@ -46,7 +46,7 @@ const Footer = () => {
       </Container>
       <div className="border-t border-illusion-black/5">
         <Container className="flex flex-col items-start justify-between gap-4 py-6 text-xs text-illusion-black/50 md:flex-row md:items-center">
-          <span>(c) 2026 Illusion. All rights reserved.</span>
+          <span>(c) 2026 Wahm. All rights reserved.</span>
           <span>Designed for modern heirlooms.</span>
         </Container>
       </div>

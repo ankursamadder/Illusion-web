@@ -98,7 +98,7 @@ const HomeNavbarBanner = () => {
               <BlurImage
                 key={`${imageUrl}_${index}`}
                 src={imageUrl}
-                alt={`Illusion promotions banner ${index + 1}`}
+                alt={`Wahm promotions banner ${index + 1}`}
                 loading={index === 0 ? 'eager' : 'lazy'}
                 fetchPriority={index === 0 ? 'high' : 'auto'}
                 decoding="async"
@@ -111,7 +111,7 @@ const HomeNavbarBanner = () => {
       ) : (
         <BlurImage
           src={images[0]}
-          alt="Illusion promotions banner"
+          alt="Wahm promotions banner"
           loading="eager"
           fetchPriority="high"
           decoding="async"

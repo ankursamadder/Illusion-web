@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand'
+import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 const useCartStore = create(
@@ -73,7 +73,7 @@ const useCartStore = create(
         }, 0),
     }),
     {
-      name: 'illusion_cart',
+      name: 'wahm_cart',
       version: 1,
     }
   )

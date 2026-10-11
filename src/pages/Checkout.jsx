@@ -318,7 +318,7 @@ const Checkout = () => {
         key: razorpayKeyId,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: 'Illusion',
+        name: 'Wahm',
         description: 'Jewellery order payment',
         order_id: razorpayOrder.orderId,
         prefill: {

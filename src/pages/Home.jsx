@@ -396,7 +396,7 @@ const Home = () => {
         <Container className="grid gap-10 md:grid-cols-2 md:items-center">
           <div className="space-y-6">
             <p className="text-sm uppercase tracking-[0.3em] text-illusion-black/60">
-              Illusion Jewellery
+              Wahm Jewellery
             </p>
             <h1 className="text-4xl font-semibold text-illusion-black md:text-5xl">
               Fine jewellery crafted for modern heirlooms.
@@ -454,7 +454,7 @@ const Home = () => {
 
       <ProductSection
         title="New Arrivals"
-        subtitle="Latest additions to the Illusion collection."
+        subtitle="Latest additions to the Wahm collection."
         products={newArrivals}
         loading={productsLoading}
         onViewAll={() => navigate('/shop')}

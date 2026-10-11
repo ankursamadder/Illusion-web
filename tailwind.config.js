@@ -4,6 +4,12 @@ export default {
   theme: {
     extend: {
       colors: {
+        wahm: {
+          black: '#0a0a0a',
+          white: '#ffffff',
+          pink: '#f5a3bb',
+          blush: '#fcc8d9',
+        },
         illusion: {
           black: '#0a0a0a',
           white: '#ffffff',

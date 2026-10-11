@@ -40,9 +40,9 @@ export const footerPageDefinitions = [
     path: '/about',
     label: 'About',
     defaultTitle: 'About',
-    defaultSubtitle: 'The story behind Illusion jewellery.',
+    defaultSubtitle: 'The story behind Wahm jewellery.',
     defaultContent:
-      'Illusion designs modern heirloom pieces with a focus on elegant silhouettes and everyday wearability.\n\nOur collections are curated to blend craftsmanship, comfort, and timeless detail.',
+      'Wahm designs modern heirloom pieces with a focus on elegant silhouettes and everyday wearability.\n\nOur collections are curated to blend craftsmanship, comfort, and timeless detail.',
   },
   {
     slug: 'careers',
@@ -51,7 +51,7 @@ export const footerPageDefinitions = [
     defaultTitle: 'Careers',
     defaultSubtitle: 'Build the next chapter with our team.',
     defaultContent:
-      'We are always open to connecting with designers, operations specialists, and customer experience professionals.\n\nShare your profile at careers@illusion.com and include your portfolio where relevant.',
+      'We are always open to connecting with designers, operations specialists, and customer experience professionals.\n\nShare your profile at careers@wahm.com and include your portfolio where relevant.',
   },
   {
     slug: 'press',
@@ -60,7 +60,7 @@ export const footerPageDefinitions = [
     defaultTitle: 'Press',
     defaultSubtitle: 'Media and partnership inquiries.',
     defaultContent:
-      'For interviews, collaborations, and media kits, please write to press@illusion.com.',
+      'For interviews, collaborations, and media kits, please write to press@wahm.com.',
   },
   {
     slug: 'sustainability',
