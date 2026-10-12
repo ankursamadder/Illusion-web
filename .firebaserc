@@ -1,6 +1,7 @@
 {
   "projects": {
-    "prod": "lllusion"
+    "default": "wahm-bccdd",
+    "prod": "wahm-bccdd"
   },
   "targets": {},
   "etags": {}

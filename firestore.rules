@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // Public catalog & store collections (anyone can view, only admin or authenticated staff can edit)
+    match /promotions/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /products/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /categories/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /storeSettings/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /footerPages/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /charges/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /coupons/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /productImageLibrary/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Reviews: Anyone can read, logged-in users can write
+    match /reviews/{document=**} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // User profiles & addresses: Users manage their own
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAuthenticated();
+      
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Orders: Users read/create their own orders
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+    }
+
+    match /orderCounters/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Contact and Career inquiries: Anyone can submit
+    match /contactEnquiries/{document=**} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+
+    match /careerEnquiries/{document=**} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+
+    // Admin mail & notification settings
+    match /mailTemplates/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /notificationSettings/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /mail/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

@@ -111,11 +111,28 @@ export const getOrders = async () => {
 }
 
 export const getUserOrders = async (userId) => {
-  const snapshot = await getDocs(
-    query(ordersRef, where('userId', '==', userId), orderBy('createdAt', 'desc'))
-  )
+  let allOrders = []
+  try {
+    const snapshot = await getDocs(
+      query(ordersRef, where('userId', '==', userId), orderBy('createdAt', 'desc'))
+    )
+    allOrders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+  } catch (error) {
+    if (error?.message?.includes('requires an index') || error?.code === 'failed-precondition') {
+      console.warn('Falling back to client-side sorting for user orders while index is building:', error)
+      const snapshot = await getDocs(query(ordersRef, where('userId', '==', userId)))
+      allOrders = snapshot.docs
+        .map((item) => ({ id: item.id, ...item.data() }))
+        .sort((a, b) => {
+          const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime()
+          const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime()
+          return timeB - timeA
+        })
+    } else {
+      throw error
+    }
+  }
 
-  const allOrders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
   return allOrders
     .filter((order) => isCustomerVisibleOrder(order))
     .map((order) => ({

@@ -102,15 +102,24 @@ export const getMostFavouriteProducts = async (max = 8) => {
 }
 
 export const getNewArrivalProducts = async (max = 8) => {
-  const snapshot = await getDocs(
-    query(
-      productsRef,
-      where('active', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(max)
+  try {
+    const snapshot = await getDocs(
+      query(
+        productsRef,
+        where('active', '==', true),
+        orderBy('createdAt', 'desc'),
+        limit(max)
+      )
     )
-  )
-  return mapAndNormalizeProducts(snapshot)
+    return mapAndNormalizeProducts(snapshot)
+  } catch (error) {
+    if (error?.message?.includes('requires an index') || error?.code === 'failed-precondition') {
+      console.warn('Falling back to client-side filtering/sorting while Firestore index is building:', error)
+      const all = await getProducts()
+      return all.filter((item) => item.active !== false).slice(0, max)
+    }
+    throw error
+  }
 }
 
 export const getProductById = async (id) => {
