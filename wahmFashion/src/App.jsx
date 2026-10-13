@@ -19,10 +19,12 @@ import NotFound from './pages/NotFound'
 import FooterPage from './pages/FooterPage'
 import { footerPageDefinitions } from './config/footerPages'
 import useScrollReveal from './hooks/useScrollReveal'
+import useActivePresence from './hooks/useActivePresence'
 
 function App() {
   const location = useLocation()
   useScrollReveal()
+  useActivePresence()
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })

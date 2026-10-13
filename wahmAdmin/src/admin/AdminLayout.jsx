@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   ChevronDown,
@@ -17,6 +17,7 @@ import {
   PlusCircle,
   Settings,
   Ticket,
+  User,
   Users,
   X,
 } from 'lucide-react'
@@ -97,6 +98,91 @@ const getHeaderForPath = (pathname) => {
   return { title: 'Wahm Admin', subtitle: 'Store Management Portal' }
 }
 
+const AdminProfileMenu = ({ user, onLogout, onOpenSettings }) => {
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const initial = (user?.name?.[0] || user?.email?.[0] || 'A').toUpperCase()
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-illusion-black/10 bg-white text-illusion-black shadow-soft transition hover:-translate-y-0.5 hover:border-illusion-black/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-illusion-pink/50"
+        aria-label="Admin profile menu"
+        aria-expanded={open}
+        title="Admin Profile"
+      >
+        <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-illusion-black text-xs font-semibold text-white shadow-inner">
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={user.name ?? 'Admin'}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            initial
+          )}
+        </span>
+      </button>
+
+      {open ? (
+        <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-illusion-black/10 bg-white p-2 text-sm shadow-card z-50">
+          <div className="border-b border-illusion-black/5 px-3 py-2.5 mb-1 bg-illusion-blush/20 rounded-xl">
+            <p className="text-xs font-semibold text-illusion-black truncate">
+              {user?.name || 'Administrator'}
+            </p>
+            <p className="text-[11px] text-illusion-black/60 truncate mt-0.5">
+              {user?.email || 'admin@thewahmfashion.com'}
+            </p>
+            <div className="mt-1.5 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+              Active Admin
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                onOpenSettings?.()
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-illusion-black/75 transition hover:bg-illusion-blush/40 hover:text-illusion-black"
+            >
+              <Settings className="h-4 w-4 text-illusion-black/60" />
+              Admin Settings
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                setOpen(false)
+                if (onLogout) await onLogout()
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 const AdminLayout = ({ children }) => {
   const isInside = useContext(IsInsideAdminLayoutContext)
 
@@ -172,25 +258,14 @@ const RootAdminLayout = ({ children }) => {
             Wahm Portal
           </h2>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={openSettings}
-            className="rounded-2xl border border-illusion-black/10 p-2 text-illusion-black/60 transition hover:bg-illusion-blush/40 hover:text-illusion-black"
-            aria-label="Open admin settings"
-            title="Admin Settings"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(false)}
-            className="rounded-full p-2 text-illusion-black/50 transition hover:bg-illusion-blush/40 hover:text-illusion-black lg:hidden"
-            aria-label="Close admin menu"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setMobileNavOpen(false)}
+          className="rounded-full p-2 text-illusion-black/50 transition hover:bg-illusion-blush/40 hover:text-illusion-black lg:hidden"
+          aria-label="Close admin menu"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
       <nav className="space-y-1">
         {primaryItems.map((item) => {
@@ -293,32 +368,6 @@ const RootAdminLayout = ({ children }) => {
           )
         })}
 
-        {/* Dedicated Admin Settings button in sidebar */}
-        <button
-          type="button"
-          onClick={openSettings}
-          className={`${baseLinkClasses} w-full text-illusion-black/70 hover:bg-illusion-blush/40 hover:text-illusion-black text-left`}
-        >
-          <Settings className="h-4 w-4 text-illusion-black/60" />
-          Admin Settings
-        </button>
-
-        {user ? (
-          <div className="pt-4 border-t border-illusion-black/10 mt-4 space-y-2">
-            <div className="px-3 py-1">
-              <p className="text-[10px] uppercase tracking-wider text-illusion-black/40">Signed in as</p>
-              <p className="text-xs font-medium text-illusion-black truncate">{user.email || 'Admin'}</p>
-            </div>
-            <button
-              type="button"
-              onClick={logout}
-              className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </button>
-          </div>
-        ) : null}
       </nav>
     </>
   )
@@ -363,14 +412,6 @@ const RootAdminLayout = ({ children }) => {
                     >
                       <Menu className="h-4 w-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={openSettings}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-illusion-black/10 bg-white text-illusion-black shadow-soft transition hover:-translate-y-0.5"
-                      aria-label="Open admin settings"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </button>
                     <p className="text-xs uppercase tracking-[0.25em] text-illusion-black/50">
                       Admin Panel
                     </p>
@@ -384,8 +425,22 @@ const RootAdminLayout = ({ children }) => {
                     </p>
                   ) : null}
                 </div>
-                <div className="self-end sm:self-start">
+                <div className="flex items-center gap-2.5 self-end sm:self-start">
+                  <button
+                    type="button"
+                    onClick={openSettings}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-illusion-black/10 bg-white text-illusion-black shadow-soft transition hover:-translate-y-0.5 hover:bg-illusion-blush/30 hover:border-illusion-black/20"
+                    aria-label="Open Admin Settings"
+                    title="Admin Settings"
+                  >
+                    <Settings className="h-4 w-4 text-illusion-black/75" />
+                  </button>
                   <AdminNotificationsMenu />
+                  <AdminProfileMenu
+                    user={user}
+                    onLogout={logout}
+                    onOpenSettings={openSettings}
+                  />
                 </div>
               </div>
               <div className="admin-scroll-mobile min-w-0">

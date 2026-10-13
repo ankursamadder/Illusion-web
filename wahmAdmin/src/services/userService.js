@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -56,11 +57,26 @@ export const deleteUser = async (id) => {
   await deleteDoc(doc(db, collections.users, id))
 }
 
+export const subscribeUsers = (callback) => {
+  return onSnapshot(
+    collection(db, collections.users),
+    (snapshot) => {
+      const users = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+      callback(users)
+    },
+    (err) => {
+      console.warn('Users listener error:', err)
+      getUsers().then(callback).catch(() => callback([]))
+    }
+  )
+}
+
 const userService = {
   getUserById,
   upsertUser,
   updateUser,
   getUsers,
+  subscribeUsers,
   deleteUser,
 }
 

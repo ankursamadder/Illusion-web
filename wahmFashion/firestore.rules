@@ -115,5 +115,11 @@ service cloud.firestore {
     match /mail/{document=**} {
       allow read, write: if isAuthenticated();
     }
+
+    // Live active user sessions tracking
+    match /activeSessions/{sessionId} {
+      allow create, update, delete: if true;
+      allow read: if true;
+    }
   }
 }

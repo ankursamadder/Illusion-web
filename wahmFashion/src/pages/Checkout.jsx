@@ -26,6 +26,12 @@ import {
   defaultPaymentSettings,
   getPaymentSettings,
 } from '../services/paymentSettingsService'
+import {
+  INDIAN_STATES,
+  getCitiesForState,
+  getDefaultPincodeForCity,
+  fetchLocationByPincode,
+} from '../data/indiaLocations'
 
 const paymentOptions = [
   {
@@ -47,8 +53,6 @@ const paymentOptions = [
 ]
 
 const emptyAddressForm = {
-  label: '',
-  name: '',
   line1: '',
   city: '',
   state: '',
@@ -75,10 +79,85 @@ const Checkout = () => {
   const [addresses, setAddresses] = useState([])
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [newAddress, setNewAddress] = useState(emptyAddressForm)
+  const [isCustomCity, setIsCustomCity] = useState(false)
+  const [pinLoading, setPinLoading] = useState(false)
+  const [pinStatusText, setPinStatusText] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('online')
   const [paymentSettings, setPaymentSettings] = useState(defaultPaymentSettings)
   const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+
+  const stateCities = useMemo(() => {
+    return getCitiesForState(newAddress.state)
+  }, [newAddress.state])
+
+  const handleStateChange = (event) => {
+    const selectedState = event.target.value
+    setIsCustomCity(false)
+    setPinStatusText('')
+    setNewAddress((prev) => ({
+      ...prev,
+      state: selectedState,
+      city: '',
+      zip: '',
+    }))
+  }
+
+  const handleCityChange = (event) => {
+    const value = event.target.value
+    if (value === '__other__') {
+      setIsCustomCity(true)
+      setNewAddress((prev) => ({ ...prev, city: '' }))
+      setPinStatusText('')
+      return
+    }
+
+    setIsCustomCity(false)
+    const defaultPin = getDefaultPincodeForCity(newAddress.state, value)
+
+    setNewAddress((prev) => ({
+      ...prev,
+      city: value,
+      zip: defaultPin || prev.zip,
+    }))
+
+    if (defaultPin) {
+      setPinStatusText(`✓ PIN code auto-filled for ${value}`)
+    } else {
+      setPinStatusText('')
+    }
+  }
+
+  const handlePincodeChange = async (event) => {
+    const rawVal = event.target.value.replace(/\D/g, '').slice(0, 6)
+    setNewAddress((prev) => ({ ...prev, zip: rawVal }))
+
+    if (rawVal.length === 6) {
+      setPinLoading(true)
+      setPinStatusText('Detecting state & city...')
+      try {
+        const found = await fetchLocationByPincode(rawVal)
+        if (found) {
+          setIsCustomCity(false)
+          setNewAddress((prev) => ({
+            ...prev,
+            zip: rawVal,
+            state: found.state || prev.state,
+            city: found.city || prev.city,
+          }))
+          setPinStatusText(`✓ Auto-detected: ${found.city}, ${found.state}`)
+        } else {
+          setPinStatusText('')
+        }
+      } catch {
+        setPinStatusText('')
+      } finally {
+        setPinLoading(false)
+      }
+    } else {
+      setPinStatusText('')
+    }
+  }
 
   useEffect(() => {
     let mounted = true
@@ -199,22 +278,47 @@ const Checkout = () => {
   ])
 
   const handleAddAddress = async () => {
-    if (!newAddress.name || !newAddress.line1 || !newAddress.phone || !newAddress.zip) {
-      toast.error('Please enter name, address, phone and PIN code')
+    if (!newAddress.line1?.trim()) {
+      toast.error('Please enter street address / flat details')
+      return
+    }
+    if (!newAddress.state?.trim()) {
+      toast.error('Please select an Indian state from the dropdown')
+      return
+    }
+    if (!newAddress.city?.trim()) {
+      toast.error('Please select or enter your city')
+      return
+    }
+    const cleanZip = String(newAddress.zip || '').replace(/\D/g, '')
+    if (cleanZip.length !== 6) {
+      toast.error('Please enter a valid 6-digit PIN code')
+      return
+    }
+    const cleanPhone = String(newAddress.phone || '').replace(/\D/g, '')
+    if (cleanPhone.length < 10) {
+      toast.error('Please enter a valid 10-digit phone number')
       return
     }
 
     const id = `addr_${Date.now()}`
     const nextAddress = {
       id,
-      ...newAddress,
-      label: newAddress.label || 'Address',
+      line1: newAddress.line1.trim(),
+      city: newAddress.city.trim(),
+      state: newAddress.state.trim(),
+      zip: cleanZip,
+      phone: cleanPhone,
+      name: user?.name || user?.displayName || 'Customer',
+      label: 'Delivery Address',
     }
     const updated = [...addresses, nextAddress]
 
     setAddresses(updated)
     setSelectedAddress(id)
     setNewAddress(emptyAddressForm)
+    setIsCustomCity(false)
+    setPinStatusText('')
     setShowAddressForm(false)
 
     if (user?.uid) {
@@ -414,24 +518,25 @@ const Checkout = () => {
                 {addresses.map((address) => (
                   <label
                     key={address.id}
-                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-illusion-black/10 bg-white p-4"
+                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-illusion-black/10 bg-white p-4 transition hover:border-illusion-pink/50 hover:bg-illusion-blush/10"
                   >
                     <input
                       type="radio"
                       name="address"
                       checked={selectedAddress === address.id}
                       onChange={() => setSelectedAddress(address.id)}
-                      className="mt-1"
+                      className="mt-1 accent-illusion-black"
                     />
-                    <div>
+                    <div className="flex-1 space-y-0.5">
                       <p className="text-sm font-semibold text-illusion-black">
-                        {address.label || 'Address'}
+                        {address.line1}
                       </p>
-                      <p className="text-sm text-illusion-black/60">{address.name}</p>
-                      <p className="text-sm text-illusion-black/60">
-                        {address.line1}, {address.city}, {address.state} {address.zip}
+                      <p className="text-sm text-illusion-black/70">
+                        {address.city ? `${address.city}, ` : ''}{address.state} - {address.zip}
                       </p>
-                      <p className="text-sm text-illusion-black/60">{address.phone}</p>
+                      <p className="text-xs text-illusion-black/50">
+                        Phone: {address.phone}
+                      </p>
                     </div>
                   </label>
                 ))}
@@ -445,66 +550,136 @@ const Checkout = () => {
 
           {(!addresses.length || showAddressForm) ? (
             <Card className="space-y-4">
-              <h3 className="text-base font-semibold text-illusion-black">
-                {addresses.length ? 'Add New Address' : 'Enter Address'}
-              </h3>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <Input
-                  label="Label"
-                  value={newAddress.label}
-                  onChange={(event) =>
-                    setNewAddress((prev) => ({ ...prev, label: event.target.value }))
-                  }
-                  placeholder="Home, Office"
-                />
-                <Input
-                  label="Name"
-                  value={newAddress.name}
-                  onChange={(event) =>
-                    setNewAddress((prev) => ({ ...prev, name: event.target.value }))
-                  }
-                />
-                <Input
-                  label="Address"
-                  value={newAddress.line1}
-                  onChange={(event) =>
-                    setNewAddress((prev) => ({ ...prev, line1: event.target.value }))
-                  }
-                />
-                <Input
-                  label="City"
-                  value={newAddress.city}
-                  onChange={(event) =>
-                    setNewAddress((prev) => ({ ...prev, city: event.target.value }))
-                  }
-                />
-                <Input
-                  label="State"
-                  value={newAddress.state}
-                  onChange={(event) =>
-                    setNewAddress((prev) => ({ ...prev, state: event.target.value }))
-                  }
-                />
-                <Input
-                  label="PIN Code"
-                  value={newAddress.zip}
-                  onChange={(event) =>
-                    setNewAddress((prev) => ({ ...prev, zip: event.target.value }))
-                  }
-                />
-                <Input
-                  label="Phone"
-                  value={newAddress.phone}
-                  onChange={(event) =>
-                    setNewAddress((prev) => ({ ...prev, phone: event.target.value }))
-                  }
-                />
+              <div className="flex items-center justify-between border-b border-illusion-black/5 pb-2">
+                <h3 className="text-base font-semibold text-illusion-black">
+                  {addresses.length ? 'Add New Address' : 'Enter Delivery Address'}
+                </h3>
+                <span className="text-xs font-medium text-illusion-black/40">India</span>
               </div>
 
-              <Button variant="secondary" onClick={handleAddAddress}>
-                Save Address
-              </Button>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <Input
+                    label="Street Address / Flat / Building"
+                    value={newAddress.line1}
+                    onChange={(event) =>
+                      setNewAddress((prev) => ({ ...prev, line1: event.target.value }))
+                    }
+                    placeholder="House/Flat No., Apartment, Street, Landmark"
+                    required
+                  />
+                </div>
+
+                <label className="flex w-full flex-col gap-2 text-sm">
+                  <span className="font-medium text-illusion-black">State</span>
+                  <select
+                    value={newAddress.state}
+                    onChange={handleStateChange}
+                    className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none transition-all duration-200 focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush"
+                  >
+                    <option value="">Select State</option>
+                    {INDIAN_STATES.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex w-full flex-col gap-2 text-sm">
+                  <span className="font-medium text-illusion-black">City / District</span>
+                  <select
+                    value={isCustomCity ? '__other__' : newAddress.city}
+                    onChange={handleCityChange}
+                    disabled={!newAddress.state}
+                    className="w-full rounded-2xl border border-illusion-black/10 bg-white px-4 py-3 text-sm text-illusion-black shadow-soft outline-none transition-all duration-200 focus:border-illusion-pink focus:ring-2 focus:ring-illusion-blush disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-illusion-black/40"
+                  >
+                    <option value="">
+                      {newAddress.state ? 'Select City' : 'Select State first'}
+                    </option>
+                    {stateCities.map((item) => (
+                      <option key={item.city} value={item.city}>
+                        {item.city}
+                      </option>
+                    ))}
+                    {newAddress.state ? (
+                      <option value="__other__">Other (Type city manually)</option>
+                    ) : null}
+                  </select>
+                </label>
+
+                {isCustomCity ? (
+                  <div className="md:col-span-2">
+                    <Input
+                      label="City Name"
+                      value={newAddress.city}
+                      onChange={(event) =>
+                        setNewAddress((prev) => ({
+                          ...prev,
+                          city: event.target.value,
+                        }))
+                      }
+                      placeholder="Enter your city / town"
+                    />
+                  </div>
+                ) : null}
+
+                <div>
+                  <Input
+                    label="PIN Code"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={newAddress.zip}
+                    onChange={handlePincodeChange}
+                    placeholder="6-digit PIN code"
+                    helperText={
+                      pinLoading
+                        ? 'Detecting location...'
+                        : pinStatusText
+                        ? pinStatusText
+                        : 'Auto-fetches with city or enter 6 digits'
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Input
+                    label="Phone Number"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={newAddress.phone}
+                    onChange={(event) =>
+                      setNewAddress((prev) => ({
+                        ...prev,
+                        phone: event.target.value.replace(/\D/g, '').slice(0, 10),
+                      }))
+                    }
+                    placeholder="10-digit mobile number"
+                    helperText="For courier delivery coordination"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button variant="secondary" onClick={handleAddAddress}>
+                  Save Address
+                </Button>
+                {addresses.length ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setShowAddressForm(false)
+                      setNewAddress(emptyAddressForm)
+                      setIsCustomCity(false)
+                      setPinStatusText('')
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                ) : null}
+              </div>
             </Card>
           ) : null}
 

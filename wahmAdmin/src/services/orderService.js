@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
   runTransaction,
@@ -152,9 +153,25 @@ export const deleteOrder = async (id) => {
   await deleteDoc(doc(db, collections.orders, id))
 }
 
+export const subscribeOrders = (callback) => {
+  const q = query(ordersRef, orderBy('createdAt', 'desc'))
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const orders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+      callback(orders)
+    },
+    (error) => {
+      console.warn('Orders realtime listener warning, falling back:', error)
+      getOrders().then(callback).catch(() => callback([]))
+    }
+  )
+}
+
 const orderService = {
   createOrder,
   getOrders,
+  subscribeOrders,
   getUserOrders,
   isCustomerVisibleOrder,
   isInitiatedOrder,
@@ -164,3 +181,4 @@ const orderService = {
 }
 
 export default orderService
+
