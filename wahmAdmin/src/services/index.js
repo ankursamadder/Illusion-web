@@ -1,0 +1,7 @@
+export { default as productService } from './productService'
+export { default as orderService } from './orderService'
+export { default as userService } from './userService'
+export { default as reviewService } from './reviewService'
+export { default as couponService } from './couponService'
+export { default as promotionService } from './promotionService'
+export { default as paymentSettingsService } from './paymentSettingsService'

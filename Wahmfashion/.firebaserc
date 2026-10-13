@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "thewahmfashion",
+    "prod": "thewahmfashion"
+  },
+  "targets": {},
+  "etags": {}
+}
