@@ -42,7 +42,7 @@ const Navbar = () => {
   const location = useLocation()
   const { user, logout } = useAuth() || {}
   const { items } = useCartStore()
-  const currentUser = user ?? { role: 'user' }
+  const currentUser = user
 
   const [open, setOpen] = useState(false)
   const [pincode, setPincode] = useState('')
@@ -287,15 +287,15 @@ const Navbar = () => {
               <button
                 type="button"
                 className={clsx(iconButtonBase, open && 'text-illusion-black')}
-                aria-label="Profile menu"
+                aria-label={user ? 'Profile menu' : 'Account menu'}
                 aria-expanded={open}
                 onClick={() => setOpen((prev) => !prev)}
               >
                 <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-illusion-blush/60">
-                  {currentUser?.photoURL ? (
+                  {user?.photoURL ? (
                     <img loading="lazy" decoding="async"
-                      src={currentUser.photoURL}
-                      alt={currentUser.name ?? 'Profile'}
+                      src={user.photoURL}
+                      alt={user.name ?? 'Profile'}
                       className="h-full w-full object-cover"
                       referrerPolicy="no-referrer"
                     />
@@ -306,29 +306,58 @@ const Navbar = () => {
               </button>
 
               {open ? (
-                <div className="absolute right-0 mt-3 w-52 rounded-2xl border border-illusion-black/10 bg-white p-2 text-sm shadow-card">
-                  <NavLink
-                    to="/orders"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between rounded-xl px-3 py-2 text-illusion-black/70 transition hover:bg-illusion-blush/50 hover:text-illusion-black"
-                  >
-                    Your Orders
-                  </NavLink>
-                  <NavLink
-                    to="/profile"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between rounded-xl px-3 py-2 text-illusion-black/70 transition hover:bg-illusion-blush/50 hover:text-illusion-black"
-                  >
-                    Your Profile
-                  </NavLink>
+                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-illusion-black/10 bg-white p-2 text-sm shadow-card z-50">
+                  {user ? (
+                    <>
+                      <div className="border-b border-illusion-black/5 px-3 py-2 mb-1">
+                        <p className="font-medium text-illusion-black truncate">{user.name || 'Account'}</p>
+                        <p className="text-xs text-illusion-black/50 truncate">{user.email}</p>
+                      </div>
+                      <NavLink
+                        to="/orders"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center justify-between rounded-xl px-3 py-2 text-illusion-black/70 transition hover:bg-illusion-blush/50 hover:text-illusion-black"
+                      >
+                        Your Orders
+                      </NavLink>
+                      <NavLink
+                        to="/profile"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center justify-between rounded-xl px-3 py-2 text-illusion-black/70 transition hover:bg-illusion-blush/50 hover:text-illusion-black"
+                      >
+                        Your Profile
+                      </NavLink>
 
-                  <button
-                    type="button"
-                    onClick={logout}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-illusion-black/70 transition hover:bg-illusion-blush/50 hover:text-illusion-black"
-                  >
-                    Logout
-                  </button>
+                      <div className="pt-1 mt-1 border-t border-illusion-black/5">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setOpen(false)
+                            if (logout) {
+                              await logout()
+                            }
+                          }}
+                          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="border-b border-illusion-black/5 px-3 py-2 mb-1">
+                        <p className="font-medium text-illusion-black">Welcome</p>
+                        <p className="text-xs text-illusion-black/50">Log in to track orders & manage profile</p>
+                      </div>
+                      <NavLink
+                        to="/login"
+                        onClick={() => setOpen(false)}
+                        className="my-1 flex items-center justify-center rounded-xl bg-illusion-black px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-black"
+                      >
+                        Log In / Sign Up
+                      </NavLink>
+                    </>
+                  )}
                 </div>
               ) : null}
             </div>

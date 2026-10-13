@@ -1,12 +1,35 @@
-﻿import { createPortal } from 'react-dom'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import clsx from 'clsx'
 
-const Modal = ({ open, title, children, onClose, actions, className }) => {
+const sizeClasses = {
+  sm: 'max-w-md',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+  '2xl': 'max-w-5xl',
+  '3xl': 'max-w-6xl',
+  full: 'max-w-[95vw]',
+}
+
+const Modal = ({
+  open,
+  title,
+  children,
+  onClose,
+  actions,
+  size = 'md',
+  className,
+}) => {
   if (!open) return null
 
+  const hasCustomMaxWidth = className && /\bmax-w-/.test(className)
+  const resolvedSizeClass = hasCustomMaxWidth
+    ? ''
+    : sizeClasses[size] || 'max-w-lg'
+
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-3 sm:px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
       <div
         className="absolute inset-0 bg-illusion-black/40 backdrop-blur-sm"
         onClick={onClose}
@@ -14,7 +37,8 @@ const Modal = ({ open, title, children, onClose, actions, className }) => {
       />
       <div
         className={clsx(
-          'relative z-10 max-h-[calc(100vh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-4 shadow-card sm:max-h-[calc(100vh-2rem)] sm:p-6',
+          'relative z-10 max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-card sm:max-h-[calc(100vh-3rem)] sm:p-7',
+          resolvedSizeClass,
           className
         )}
         role="dialog"

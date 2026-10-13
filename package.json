@@ -4,12 +4,15 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm --prefix Wahmfashion run dev",
-    "dev:web": "npm --prefix Wahmfashion run dev",
+    "dev": "npm --prefix wahmFashion run dev",
+    "dev:web": "npm --prefix wahmFashion run dev",
     "dev:admin": "npm --prefix wahmAdmin run dev",
-    "build": "npm --prefix Wahmfashion run build",
-    "build:web": "npm --prefix Wahmfashion run build",
+    "build": "npm --prefix wahmFashion run build",
+    "build:web": "npm --prefix wahmFashion run build",
     "build:admin": "npm --prefix wahmAdmin run build",
-    "build:all": "npm --prefix Wahmfashion run build && npm --prefix wahmAdmin run build"
+    "build:all": "npm --prefix wahmFashion run build && npm --prefix wahmAdmin run build",
+    "deploy:web": "npm --prefix wahmFashion run deploy",
+    "deploy:admin": "npm --prefix wahmAdmin run deploy",
+    "deploy:all": "npm --prefix wahmFashion run deploy && npm --prefix wahmAdmin run deploy"
   }
 }

@@ -6,16 +6,16 @@ Monorepo containing the Wahm Fashion customer storefront and admin dashboard.
 
 ```
 wahm/
-├── Wahmfashion/   # Main customer-facing ecommerce storefront (React + Vite)
+├── wahmFashion/   # Main customer-facing ecommerce storefront (React + Vite)
 └── wahmAdmin/     # Standalone store management & operations panel (React + Vite)
 ```
 
 ## Running Applications
 
-### 1. Storefront (`Wahmfashion`)
+### 1. Storefront (`wahmFashion`)
 - **Direct**:
   ```bash
-  cd Wahmfashion
+  cd wahmFashion
   npm run dev
   ```
 - **From root**:
@@ -40,3 +40,17 @@ wahm/
 - **Build Storefront**: `npm run build:web`
 - **Build Admin Panel**: `npm run build:admin`
 - **Build All**: `npm run build:all`
+
+### 4. Deploy to Firebase Hosting
+- **Deploy Storefront (`thewahmfashion.web.app`)**:
+  ```bash
+  npm run deploy:web
+  ```
+- **Deploy Admin Portal (`thewahmfashion-admin.web.app`)**:
+  ```bash
+  npm run deploy:admin
+  ```
+- **Deploy Both Sites**:
+  ```bash
+  npm run deploy:all
+  ```

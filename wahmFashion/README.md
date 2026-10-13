@@ -1,4 +1,4 @@
-# Wahmfashion Storefront
+# wahmFashion Storefront
 
 The customer-facing online boutique and shopping storefront for Wahm Fashion.
 
@@ -12,9 +12,9 @@ The customer-facing online boutique and shopping storefront for Wahm Fashion.
 
 ## Getting Started
 
-1. Navigate to the `Wahmfashion` directory:
+1. Navigate to the `wahmFashion` directory:
    ```bash
-   cd Wahmfashion
+   cd wahmFashion
    ```
 
 2. Install dependencies:

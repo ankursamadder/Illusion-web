@@ -38,9 +38,9 @@ const dedupeLibraryImages = (items = []) => {
 
 const uploadLibraryImage = async (file) => {
   const optimizedFile = await optimizeImageFile(file, {
-    maxWidth: 1280,
-    maxHeight: 1280,
-    quality: 0.74,
+    maxWidth: 2000,
+    maxHeight: 2000,
+    quality: 0.90,
   })
   const safeName = `product-library-${Date.now()}-${Math.random()
     .toString(36)

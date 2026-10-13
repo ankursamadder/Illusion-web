@@ -49,3 +49,9 @@ Standalone Admin Panel for Wahm e-commerce platform.
    ```bash
    npm run build
    ```
+
+6. Deploy to Firebase Hosting:
+   ```bash
+   npm run deploy
+   ```
+   Deploys directly to dedicated site: `https://thewahmfashion-admin.web.app`

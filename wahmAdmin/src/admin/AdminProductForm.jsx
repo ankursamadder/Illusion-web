@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Bold, Check, Italic, List, ListOrdered, Plus, Underline, X } from 'lucide-react'
@@ -363,9 +363,9 @@ const ProductForm = () => {
 
     const uploads = images.map(async (file, index) => {
       const optimizedFile = await optimizeImageFile(file, {
-        maxWidth: 1280,
-        maxHeight: 1280,
-        quality: 0.74,
+        maxWidth: 2000,
+        maxHeight: 2000,
+        quality: 0.90,
       })
       const fileRef = ref(
         storage,
@@ -444,35 +444,69 @@ const ProductForm = () => {
       }
 
       if (editing) {
-        const newImages = await uploadImages(id)
+        let newImages = []
+        if (images.length > 0) {
+          try {
+            newImages = await uploadImages(id)
+          } catch (uploadError) {
+            console.error('Image upload failed:', uploadError)
+            toast.error(
+              'Image upload failed. Ensure Firebase Storage is enabled in Firebase Console and CORS is configured.',
+              { duration: 6000 }
+            )
+          }
+        }
         const mergedImages = [...existingImages, ...newImages]
         await updateProduct(id, {
           ...payload,
           images: mergedImages,
         })
 
-        const libraryImages = await getProductImageLibrary()
-        const mapped = mapProductImagesToLibrary(mergedImages)
-        const nextLibrary = dedupeLibraryImages([...libraryImages, ...mapped])
-        if (nextLibrary.length !== libraryImages.length) {
-          await saveProductImageLibrary(nextLibrary)
+        try {
+          const libraryImages = await getProductImageLibrary()
+          const mapped = mapProductImagesToLibrary(mergedImages)
+          const nextLibrary = dedupeLibraryImages([...libraryImages, ...mapped])
+          if (nextLibrary.length !== libraryImages.length) {
+            await saveProductImageLibrary(nextLibrary)
+          }
+        } catch (libErr) {
+          console.warn('Library sync warning:', libErr)
         }
 
         toast.success('Product updated')
       } else {
         const productId = await addProduct({
           ...payload,
-          images: [],
+          images: existingImages || [],
         })
-        const uploaded = await uploadImages(productId)
-        const mergedImages = [...existingImages, ...uploaded]
-        await updateProduct(productId, { images: mergedImages })
 
-        const libraryImages = await getProductImageLibrary()
-        const mapped = mapProductImagesToLibrary(mergedImages)
-        const nextLibrary = dedupeLibraryImages([...libraryImages, ...mapped])
-        if (nextLibrary.length !== libraryImages.length) {
-          await saveProductImageLibrary(nextLibrary)
+        let uploaded = []
+        if (images.length > 0) {
+          try {
+            uploaded = await uploadImages(productId)
+          } catch (uploadError) {
+            console.error('Image upload failed:', uploadError)
+            toast.error(
+              'Product created, but image upload failed because Firebase Storage is not initialized in the Firebase Console.',
+              { duration: 7000 }
+            )
+          }
+        }
+
+        if (uploaded.length > 0) {
+          const mergedImages = [...existingImages, ...uploaded]
+          await updateProduct(productId, { images: mergedImages })
+
+          try {
+            const libraryImages = await getProductImageLibrary()
+            const mapped = mapProductImagesToLibrary(mergedImages)
+            const nextLibrary = dedupeLibraryImages([...libraryImages, ...mapped])
+            if (nextLibrary.length !== libraryImages.length) {
+              await saveProductImageLibrary(nextLibrary)
+            }
+          } catch (libErr) {
+            console.warn('Library sync warning:', libErr)
+          }
         }
 
         toast.success('Product created')
@@ -480,7 +514,15 @@ const ProductForm = () => {
 
       navigate('/admin/products')
     } catch (error) {
-      toast.error(error?.message ?? 'Failed to save product')
+      console.error('Product save error:', error)
+      const msg = error?.message || ''
+      if (msg.includes('permission') || msg.includes('PERMISSION_DENIED')) {
+        toast.error('Permission denied: Please ensure you are logged into an authorized admin account.')
+      } else if (msg.includes('BLOCKED_BY_CLIENT') || msg.includes('Failed to fetch')) {
+        toast.error('Request blocked: Please disable Brave Shields / AdBlocker for localhost.')
+      } else {
+        toast.error(msg || 'Failed to save product')
+      }
     } finally {
       setLoading(false)
     }

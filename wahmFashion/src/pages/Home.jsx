@@ -13,6 +13,7 @@ import {
 } from '../services/productService'
 import { getApprovedReviews } from '../services/reviewService'
 import { getBestSellerVideos } from '../services/promotionService'
+import SEO from '../components/SEO'
 
 const chunkItems = (items, size) => {
   const chunks = []
@@ -392,6 +393,12 @@ const Home = () => {
 
   return (
     <div>
+      <SEO
+        title="Wahm Jewellery | Fine Jewellery Crafted for Modern Heirlooms"
+        description="Discover Wahm Jewellery — handcrafted fine jewellery designed for modern heirlooms. Explore curated collections of timeless rings, necklaces, earrings, and bracelets."
+        canonical="https://thewahmfashion.web.app/"
+        ogImage="https://thewahmfashion.web.app/og-image.png"
+      />
       <section data-reveal className="bg-illusion-blush/50 py-16">
         <Container className="grid gap-10 md:grid-cols-2 md:items-center">
           <div className="space-y-6">

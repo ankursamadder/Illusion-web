@@ -1,12 +1,9 @@
 {
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "functions": {
-    "source": "functions"
+  "storage": {
+    "rules": "storage.rules"
   },
   "hosting": {
+    "site": "thewahmfashion-admin",
     "public": "dist",
     "ignore": [
       "firebase.json",
@@ -14,10 +11,6 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      {
-        "source": "/api/**",
-        "function": "api"
-      },
       {
         "source": "**",
         "destination": "/index.html"

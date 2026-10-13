@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isValidSize() {
+      return request.resource.size < 15 * 1024 * 1024; // 15MB max
+    }
+
+    // Product Images: Public can read, authenticated staff can upload/delete
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.method == 'delete' || (isImage() && isValidSize()));
+    }
+
+    // Product Gallery Assets
+    match /gallery/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.method == 'delete' || (isImage() && isValidSize()));
+    }
+
+    // Review attachments
+    match /reviews/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.method == 'delete' || (isImage() && isValidSize()));
+    }
+
+    // General fallback
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+  }
+}

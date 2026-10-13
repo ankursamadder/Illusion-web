@@ -73,6 +73,15 @@ export const AuthProvider = ({ children }) => {
           firebaseUser.displayName ??
           getFallbackName(firebaseUser.email),
         role: profile?.role ?? 'admin',
+        status: profile?.status ?? 'active',
+        permissions: profile?.permissions ?? {
+          canManageProducts: true,
+          canManageOrders: true,
+          canManageUsers: true,
+          canManageSettings: true,
+          canManagePromotions: true,
+          canManageCoupons: true,
+        },
         photoURL: firebaseUser.photoURL ?? '',
       })
       setLoading(false)
