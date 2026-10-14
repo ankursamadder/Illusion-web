@@ -311,7 +311,9 @@ const Navbar = () => {
                     <>
                       <div className="border-b border-illusion-black/5 px-3 py-2 mb-1">
                         <p className="font-medium text-illusion-black truncate">{user.name || 'Account'}</p>
-                        <p className="text-xs text-illusion-black/50 truncate">{user.email}</p>
+                        <p className="text-xs text-illusion-black/50 truncate">
+                          {user.email || user.phone}
+                        </p>
                       </div>
                       <NavLink
                         to="/orders"

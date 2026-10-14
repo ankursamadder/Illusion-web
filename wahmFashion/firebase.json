@@ -57,7 +57,10 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "function": "api"
+        "function": {
+          "functionId": "api",
+          "region": "asia-south1"
+        }
       },
       {
         "source": "**",

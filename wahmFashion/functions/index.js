@@ -10,9 +10,6 @@ const { defineSecret } = require('firebase-functions/params')
 
 const RAZORPAY_KEY_ID = defineSecret('RAZORPAY_KEY_ID')
 const RAZORPAY_KEY_SECRET = defineSecret('RAZORPAY_KEY_SECRET')
-const EMAIL_USER = defineSecret('EMAIL_USER')
-const EMAIL_PASS = defineSecret('EMAIL_PASS')
-const ADMIN_EMAIL = defineSecret('ADMIN_EMAIL')
 
 if (!admin.apps.length) {
   admin.initializeApp()
@@ -161,8 +158,8 @@ const wrapEmailHtml = ({ title, bodyHtml, productImage }) => {
 }
 
 const getMailTransporter = () => {
-  const user = EMAIL_USER.value()
-  const pass = EMAIL_PASS.value()
+  const user = process.env.EMAIL_USER
+  const pass = process.env.EMAIL_PASS
 
   if (!user || !pass) return null
 
@@ -188,7 +185,7 @@ const getEmailSettingsAndTemplates = async () => {
 
   const settings = settingsSnapshot.exists ? settingsSnapshot.data() || {} : {}
   const adminRecipients = sanitizeEmails([
-    ADMIN_EMAIL.value(),
+    process.env.ADMIN_EMAIL,
     ...(Array.isArray(settings.adminRecipientEmails)
       ? settings.adminRecipientEmails
       : []),
@@ -220,7 +217,7 @@ const sendMail = async ({ to, subject, html }) => {
   if (!recipients.length) return false
 
   await transporter.sendMail({
-    from: EMAIL_USER.value(),
+    from: process.env.EMAIL_USER || 'Wahm Jewellery',
     to: recipients,
     subject,
     html,
@@ -331,7 +328,6 @@ exports.onOrderCreated = onDocumentWritten(
   {
     region: 'asia-south1',
     document: 'orders/{orderId}',
-    secrets: [EMAIL_USER, EMAIL_PASS, ADMIN_EMAIL],
   },
   async (event) => {
     const afterSnapshot = event.data?.after
@@ -408,8 +404,8 @@ exports.onOrderCreated = onDocumentWritten(
 
 const createRazorpayClient = () =>
   new Razorpay({
-    key_id: RAZORPAY_KEY_ID.value(),
-    key_secret: RAZORPAY_KEY_SECRET.value(),
+    key_id: RAZORPAY_KEY_ID.value().trim(),
+    key_secret: RAZORPAY_KEY_SECRET.value().trim(),
   })
 
 const sendError = (res, statusCode, message) => {
@@ -427,7 +423,13 @@ const signaturesMatch = (signature, expectedSignature) => {
 
 const app = express()
 app.use(cors({ origin: true }))
-app.use(express.json())
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf
+    },
+  })
+)
 
 app.get('/health', (req, res) => {
   res.json({ ok: true })
@@ -456,7 +458,7 @@ app.post('/razorpay/order', async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      keyId: RAZORPAY_KEY_ID.value(),
+      keyId: RAZORPAY_KEY_ID.value().trim(),
     })
   } catch (error) {
     console.error('Razorpay order error', error)
@@ -481,7 +483,7 @@ app.post('/razorpay/verify', async (req, res) => {
     }
 
     const expectedSignature = crypto
-      .createHmac('sha256', RAZORPAY_KEY_SECRET.value())
+      .createHmac('sha256', RAZORPAY_KEY_SECRET.value().trim())
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex')
 
@@ -530,6 +532,108 @@ app.post('/razorpay/verify', async (req, res) => {
   } catch (error) {
     console.error('Razorpay verification error', error)
     return sendError(res, 500, 'Failed to verify payment')
+  }
+})
+
+app.post('/razorpay/webhook', async (req, res) => {
+  try {
+    const webhookSignature = req.headers['x-razorpay-signature']
+    if (!webhookSignature) {
+      return sendError(res, 400, 'Missing x-razorpay-signature header')
+    }
+
+    const webhookSecret = (
+      process.env.RAZORPAY_WEBHOOK_SECRET || RAZORPAY_KEY_SECRET.value()
+    ).trim()
+
+    const rawPayload = req.rawBody
+      ? req.rawBody.toString('utf8')
+      : JSON.stringify(req.body)
+
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawPayload)
+      .digest('hex')
+
+    if (!signaturesMatch(webhookSignature, expectedSignature)) {
+      console.warn('Webhook signature mismatch')
+      return sendError(res, 400, 'Invalid webhook signature')
+    }
+
+    const event = req.body.event
+    console.log('Received Razorpay webhook event:', event)
+
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const payment = req.body.payload?.payment?.entity || {}
+      const orderEntity = req.body.payload?.order?.entity || {}
+      const razorpayOrderId = payment.order_id || orderEntity.id || ''
+      const razorpayPaymentId = payment.id || ''
+      const notes = { ...(orderEntity.notes || {}), ...(payment.notes || {}) }
+      const internalOrderId = String(notes.orderId || notes.receipt || orderEntity.receipt || '')
+
+      let orderDocRef = null
+      if (internalOrderId) {
+        orderDocRef = db.collection('orders').doc(internalOrderId)
+      } else if (razorpayOrderId) {
+        const querySnap = await db
+          .collection('orders')
+          .where('razorpayOrderId', '==', razorpayOrderId)
+          .limit(1)
+          .get()
+        if (!querySnap.empty) {
+          orderDocRef = querySnap.docs[0].ref
+        }
+      }
+
+      if (orderDocRef) {
+        await orderDocRef.set(
+          {
+            status: 'Paid',
+            paymentStatus: 'Success',
+            ...(razorpayPaymentId ? { paymentId: razorpayPaymentId, razorpay_payment_id: razorpayPaymentId } : {}),
+            ...(razorpayOrderId ? { razorpayOrderId, razorpay_order_id: razorpayOrderId } : {}),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
+        console.log(`Order updated via webhook to Paid: ${orderDocRef.id}`)
+      }
+    } else if (event === 'payment.failed') {
+      const payment = req.body.payload?.payment?.entity || {}
+      const razorpayOrderId = payment.order_id || ''
+      const notes = payment.notes || {}
+      const internalOrderId = String(notes.orderId || notes.receipt || '')
+
+      let orderDocRef = null
+      if (internalOrderId) {
+        orderDocRef = db.collection('orders').doc(internalOrderId)
+      } else if (razorpayOrderId) {
+        const querySnap = await db
+          .collection('orders')
+          .where('razorpayOrderId', '==', razorpayOrderId)
+          .limit(1)
+          .get()
+        if (!querySnap.empty) {
+          orderDocRef = querySnap.docs[0].ref
+        }
+      }
+
+      if (orderDocRef) {
+        await orderDocRef.set(
+          {
+            paymentStatus: 'Failed',
+            initiatedReason: payment.error_description || 'Payment failed',
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
+      }
+    }
+
+    return res.json({ status: 'ok' })
+  } catch (error) {
+    console.error('Webhook processing error:', error)
+    return sendError(res, 500, 'Webhook processing failed')
   }
 })
 

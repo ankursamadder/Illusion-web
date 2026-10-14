@@ -1,4 +1,4 @@
-﻿import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Heart, ShoppingBag } from 'lucide-react'
 import Card from './Card'
 import Badge from './Badge'
@@ -48,11 +48,9 @@ const ProductCard = ({ product }) => {
   }
 
   const handleBuyNow = () => {
-    if (!user) {
-      navigate('/login', { state: { from: location } })
-      return
-    }
-
+    try {
+      sessionStorage.setItem('wahm_checkout_pending', 'true')
+    } catch {}
     addItem(
       {
         ...product,
@@ -60,7 +58,7 @@ const ProductCard = ({ product }) => {
       },
       1
     )
-    navigate('/cart')
+    navigate('/checkout')
   }
 
   return (

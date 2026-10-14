@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Heart, Share2 } from 'lucide-react'
@@ -125,11 +125,9 @@ const ProductDetails = () => {
   }
 
   const handleBuyNow = () => {
-    if (!user) {
-      navigate('/login', { state: { from: location } })
-      return
-    }
-
+    try {
+      sessionStorage.setItem('wahm_checkout_pending', 'true')
+    } catch {}
     addItem(
       {
         ...product,
@@ -137,7 +135,7 @@ const ProductDetails = () => {
       },
       1
     )
-    navigate('/cart')
+    navigate('/checkout')
   }
 
   const handleShare = async () => {

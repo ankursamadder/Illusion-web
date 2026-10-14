@@ -150,8 +150,26 @@ const Cart = () => {
               <span>{formatCurrency(totals.total)}</span>
             </div>
             <div className="grid gap-2">
-              <Button onClick={() => navigate('/checkout')}>Checkout</Button>
-              <Button variant="secondary" onClick={clear}>
+              <Button
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem('wahm_checkout_pending', 'true')
+                  } catch {}
+                  navigate('/checkout')
+                }}
+              >
+                Checkout
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  try {
+                    sessionStorage.removeItem('wahm_checkout_pending')
+                    sessionStorage.removeItem('wahm_checkout_draft_address')
+                  } catch {}
+                  clear()
+                }}
+              >
                 Clear cart
               </Button>
             </div>

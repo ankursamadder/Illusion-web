@@ -188,3 +188,11 @@ img {
     transition: none;
   }
 }
+
+/* Hide floating Google reCAPTCHA badge to prevent it overlapping buttons */
+.grecaptcha-badge {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}

@@ -44,12 +44,11 @@ const loadRazorpay = () => {
   return razorpayScriptPromise
 }
 
-const DEFAULT_API_BASE_URL = 'https://api-uk22ijbdfq-el.a.run.app'
+const DEFAULT_API_BASE_URL = 'https://api-cybbhxyrlq-el.a.run.app'
 
 const getApiBaseUrl = () => {
-  const configured = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL
-  const normalized = configured.trim().replace(/\/+$/, '')
-  return normalized.endsWith('/api') ? normalized.slice(0, -4) : normalized
+  const configured = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
+  return configured.trim().replace(/\/+$/, '')
 }
 
 const parseErrorMessage = async (response) => {

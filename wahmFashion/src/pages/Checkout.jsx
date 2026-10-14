@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
+import {
+  Banknote,
+  CreditCard,
+  Landmark,
+  Wallet,
+  Lock,
+  CheckCircle2,
+  User as UserIcon,
+  ArrowRight,
+} from 'lucide-react'
+import AuthModal from '../components/AuthModal'
 import PageShell from './PageShell'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -62,7 +72,7 @@ const emptyAddressForm = {
 
 const Checkout = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const { items, clear } = useCartStore()
   const { charges, chargesLoading } = useCheckoutCharges()
   const {
@@ -75,10 +85,20 @@ const Checkout = () => {
     removeCoupon,
   } = useAppliedCoupon(items)
 
+  const [showAuthModal, setShowAuthModal] = useState(false)
   const [selectedAddress, setSelectedAddress] = useState('')
   const [addresses, setAddresses] = useState([])
   const [showAddressForm, setShowAddressForm] = useState(false)
-  const [newAddress, setNewAddress] = useState(emptyAddressForm)
+  const [newAddress, setNewAddress] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('wahm_checkout_draft_address')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed === 'object') return parsed
+      }
+    } catch {}
+    return emptyAddressForm
+  })
   const [isCustomCity, setIsCustomCity] = useState(false)
   const [pinLoading, setPinLoading] = useState(false)
   const [pinStatusText, setPinStatusText] = useState('')
@@ -158,6 +178,22 @@ const Checkout = () => {
       setPinStatusText('')
     }
   }
+
+  useEffect(() => {
+    try {
+      const hasContent = Object.values(newAddress).some(Boolean)
+      if (hasContent) {
+        sessionStorage.setItem('wahm_checkout_draft_address', JSON.stringify(newAddress))
+      }
+    } catch {}
+  }, [newAddress])
+
+  // Auto-open auth modal if unauthenticated and has items in cart
+  useEffect(() => {
+    if (!user && items.length > 0) {
+      setShowAuthModal(true)
+    }
+  }, [user, items.length])
 
   useEffect(() => {
     let mounted = true
@@ -259,6 +295,7 @@ const Checkout = () => {
 
   const canPlaceOrder = useMemo(() => {
     return (
+      Boolean(user) &&
       Boolean(selectedAddress) &&
       Boolean(paymentMethod) &&
       availablePaymentOptions.length > 0 &&
@@ -268,6 +305,7 @@ const Checkout = () => {
       !paymentSettingsLoading
     )
   }, [
+    user,
     availablePaymentOptions.length,
     chargesLoading,
     couponLoading,
@@ -317,6 +355,9 @@ const Checkout = () => {
     setAddresses(updated)
     setSelectedAddress(id)
     setNewAddress(emptyAddressForm)
+    try {
+      sessionStorage.removeItem('wahm_checkout_draft_address')
+    } catch {}
     setIsCustomCity(false)
     setPinStatusText('')
     setShowAddressForm(false)
@@ -388,6 +429,10 @@ const Checkout = () => {
       const orderId = createdOrder.id
 
       if (paymentMethod === 'cod') {
+        try {
+          sessionStorage.removeItem('wahm_checkout_pending')
+          sessionStorage.removeItem('wahm_checkout_draft_address')
+        } catch {}
         toast.success('Order placed successfully')
         clear()
         navigate('/orders')
@@ -453,6 +498,10 @@ const Checkout = () => {
               razorpayOrderId: response.razorpay_order_id,
             })
             clear()
+            try {
+              sessionStorage.removeItem('wahm_checkout_pending')
+              sessionStorage.removeItem('wahm_checkout_draft_address')
+            } catch {}
             toast.success('Payment successful')
             navigate('/orders')
           } catch (verifyError) {
@@ -495,14 +544,103 @@ const Checkout = () => {
     }
   }
 
+  if (!items.length) {
+    return (
+      <PageShell title="Checkout" subtitle="Review your selected items and complete your order.">
+        <Card className="mx-auto max-w-lg py-12 text-center space-y-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-illusion-blush/60 text-3xl">
+            🛍️
+          </div>
+          <h2 className="text-2xl font-semibold text-illusion-black">Your Cart is Empty</h2>
+          <p className="mx-auto max-w-sm text-sm text-illusion-black/60">
+            You don't have any items in your cart to checkout yet. Explore our handcrafted jewellery collections and find something you love!
+          </p>
+          <div className="pt-2">
+            <Button onClick={() => navigate('/shop')}>Explore Shop</Button>
+          </div>
+        </Card>
+      </PageShell>
+    )
+  }
+
   return (
     <PageShell title="Checkout" subtitle="Select address and payment to place your order.">
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
+          {/* Step 1: Account Verification */}
+          {!user ? (
+            <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-3xl border-2 border-illusion-pink/40 bg-gradient-to-r from-illusion-blush/25 to-white p-5 shadow-soft">
+              <div className="flex items-center gap-3">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-illusion-black text-xs font-semibold text-white shadow-soft">
+                  1
+                </span>
+                <div>
+                  <h2 className="text-base font-semibold text-illusion-black">
+                    Sign In to Complete Checkout
+                  </h2>
+                  <p className="text-xs text-illusion-black/60">
+                    Sign in to unlock delivery address and fast checkout.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={() => setShowAuthModal(true)}
+                className="w-full sm:w-auto shrink-0 shadow-sm"
+              >
+                Sign In / Register
+              </Button>
+            </Card>
+          ) : (
+            <Card className="flex items-center justify-between rounded-3xl border border-emerald-500/20 bg-emerald-50/50 p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-soft">
+                  ✓
+                </span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-800">
+                    1. Account Verified
+                  </p>
+                  <p className="text-sm font-semibold text-illusion-black">
+                    {user.name || 'Shopper'}{' '}
+                    <span className="text-xs font-normal text-illusion-black/60">
+                      ({user.phone || user.email})
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (logout) await logout()
+                }}
+                className="text-xs font-medium text-illusion-black/50 underline transition hover:text-rose-600"
+              >
+                Switch account
+              </button>
+            </Card>
+          )}
+
+          {/* Step 2: Delivery Address */}
           <Card className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-illusion-black">Delivery Address</h2>
-              {addresses.length ? (
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                    user ? 'bg-illusion-black text-white' : 'bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  2
+                </span>
+                <h2
+                  className={`text-lg font-semibold ${
+                    user ? 'text-illusion-black' : 'text-illusion-black/50'
+                  }`}
+                >
+                  Delivery Address
+                </h2>
+              </div>
+              {user && addresses.length ? (
                 <Button
                   size="sm"
                   variant="secondary"
@@ -513,7 +651,36 @@ const Checkout = () => {
               ) : null}
             </div>
 
-            {addresses.length ? (
+            {!user ? (
+              <div
+                onClick={() => setShowAuthModal(true)}
+                className="group cursor-pointer space-y-3 rounded-2xl border border-dashed border-illusion-black/20 bg-illusion-blush/10 p-6 text-center transition hover:border-illusion-pink hover:bg-illusion-blush/20"
+              >
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-illusion-blush/40 text-illusion-black/60 group-hover:scale-105 transition-transform">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-illusion-black">
+                    Delivery address is locked
+                  </p>
+                  <p className="mx-auto max-w-sm text-xs text-illusion-black/60 mt-1">
+                    Please sign in or create an account to unlock your delivery address and complete checkout.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowAuthModal(true)
+                  }}
+                  className="mt-1 bg-white hover:bg-illusion-blush/30"
+                >
+                  Sign In to Unlock
+                </Button>
+              </div>
+            ) : addresses.length ? (
               <div className="space-y-3">
                 {addresses.map((address) => (
                   <label
@@ -548,7 +715,7 @@ const Checkout = () => {
             )}
           </Card>
 
-          {(!addresses.length || showAddressForm) ? (
+          {user && (!addresses.length || showAddressForm) ? (
             <Card className="space-y-4">
               <div className="flex items-center justify-between border-b border-illusion-black/5 pb-2">
                 <h3 className="text-base font-semibold text-illusion-black">
@@ -684,7 +851,14 @@ const Checkout = () => {
           ) : null}
 
           <Card className="space-y-3">
-            <h3 className="text-base font-semibold text-illusion-black">Order Items</h3>
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-illusion-black text-xs font-semibold text-white">
+                3
+              </span>
+              <h3 className="text-base font-semibold text-illusion-black">
+                Order Items ({items.length})
+              </h3>
+            </div>
             {items.length ? (
               items.map((item) => (
                 <div
@@ -819,7 +993,11 @@ const Checkout = () => {
               <span>{formatCurrency(total)}</span>
             </div>
 
-            {!selectedAddress ? (
+            {!user ? (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-800">
+                Please sign in or create an account in Step 1 to enter your delivery address and complete checkout.
+              </p>
+            ) : !selectedAddress ? (
               <p className="text-xs text-red-500">Please select or add an address first.</p>
             ) : null}
             {!paymentSettingsLoading && !availablePaymentOptions.length ? (
@@ -828,12 +1006,29 @@ const Checkout = () => {
               </p>
             ) : null}
 
-            <Button className="w-full" onClick={handleConfirm} disabled={!canPlaceOrder || submitting}>
-              {submitting ? 'Processing...' : 'Place Order'}
-            </Button>
+            {!user ? (
+              <Button
+                className="w-full"
+                onClick={() => setShowAuthModal(true)}
+              >
+                Sign In to Proceed
+              </Button>
+            ) : (
+              <Button className="w-full" onClick={handleConfirm} disabled={!canPlaceOrder || submitting}>
+                {submitting ? 'Processing...' : 'Place Order'}
+              </Button>
+            )}
           </Card>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => setShowAuthModal(false)}
+        title="Sign in to Checkout"
+        subtitle="Sign in to enter your delivery address and complete your order."
+      />
     </PageShell>
   )
 }

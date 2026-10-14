@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import PageShell from './PageShell'
 import Card from '../components/ui/Card'
@@ -20,7 +20,7 @@ const Orders = () => {
       if (!user?.uid) return
       setLoading(true)
       try {
-        const data = await getUserOrders(user.uid)
+        const data = await getUserOrders(user.uid, user.authUid)
         if (mounted) setOrders(data)
       } catch (error) {
         toast.error(error?.message ?? 'Failed to load orders')

@@ -69,7 +69,7 @@ const Profile = () => {
         setAddresses(profile?.addresses ?? [])
 
         const [userOrders, reviews] = await Promise.all([
-          getUserOrders(user.uid),
+          getUserOrders(user.uid, user.authUid),
           getUserReviews(user.uid),
         ])
 

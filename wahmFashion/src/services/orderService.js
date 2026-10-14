@@ -110,30 +110,58 @@ export const getOrders = async () => {
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
 }
 
-export const getUserOrders = async (userId) => {
+export const getUserOrders = async (userId, secondaryUserId = null) => {
   let allOrders = []
+  const userIds = [userId, secondaryUserId].filter(Boolean)
+  if (userIds.length === 0) return []
+
   try {
-    const snapshot = await getDocs(
-      query(ordersRef, where('userId', '==', userId), orderBy('createdAt', 'desc'))
-    )
+    const q =
+      userIds.length === 1
+        ? query(ordersRef, where('userId', '==', userIds[0]), orderBy('createdAt', 'desc'))
+        : query(ordersRef, where('userId', 'in', userIds), orderBy('createdAt', 'desc'))
+    const snapshot = await getDocs(q)
     allOrders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
   } catch (error) {
-    if (error?.message?.includes('requires an index') || error?.code === 'failed-precondition') {
-      console.warn('Falling back to client-side sorting for user orders while index is building:', error)
-      const snapshot = await getDocs(query(ordersRef, where('userId', '==', userId)))
-      allOrders = snapshot.docs
-        .map((item) => ({ id: item.id, ...item.data() }))
-        .sort((a, b) => {
-          const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime()
-          const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime()
-          return timeB - timeA
-        })
+    if (
+      error?.message?.includes('requires an index') ||
+      error?.code === 'failed-precondition' ||
+      error?.message?.includes('in')
+    ) {
+      console.warn('Falling back to client-side sorting/filtering for user orders:', error)
+      try {
+        const q =
+          userIds.length === 1
+            ? query(ordersRef, where('userId', '==', userIds[0]))
+            : query(ordersRef, where('userId', 'in', userIds))
+        const snapshot = await getDocs(q)
+        allOrders = snapshot.docs
+          .map((item) => ({ id: item.id, ...item.data() }))
+          .sort((a, b) => {
+            const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime()
+            const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime()
+            return timeB - timeA
+          })
+      } catch (fallbackError) {
+        console.warn('Fallback failed, querying primary userId:', fallbackError)
+        const snapshot = await getDocs(query(ordersRef, where('userId', '==', userId)))
+        allOrders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+      }
     } else {
       throw error
     }
   }
 
-  return allOrders
+  const seenIds = new Set()
+  const uniqueOrders = []
+  for (const item of allOrders) {
+    if (!seenIds.has(item.id)) {
+      seenIds.add(item.id)
+      uniqueOrders.push(item)
+    }
+  }
+
+  return uniqueOrders
     .filter((order) => isCustomerVisibleOrder(order))
     .map((order) => ({
       ...order,
